@@ -1,0 +1,101 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\SumateAccion;
+use App\Models\SumateConfig;
+use App\Models\SumateNivel;
+use App\Models\SumateParticipant;
+use App\Models\SumatePrecondicion;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+
+/**
+ * Datos del programa Súmate (sumateMock.ts). Q3 2026.
+ * Juan Díaz (participante id 10 del mock) se enlaza al usuario demo (MY_PARTICIPANT_ID).
+ */
+class SumateSeeder extends Seeder
+{
+    public function run(): void
+    {
+        SumateConfig::updateOrCreate(['trimestre' => 'Q3 2026'], [
+            'periodo_label' => 'Julio – Septiembre 2026',
+            'cierre_label' => '30 sep 2026',
+            'active' => true,
+        ]);
+
+        $precondiciones = [
+            ['slug' => 'antiguedad', 'label' => 'Antigüedad', 'req' => '> 3 meses', 'desc' => 'Garantiza que la persona ya conoce mínimamente la empresa, su rol y la forma básica de trabajo.'],
+            ['slug' => 'puntualidad', 'label' => 'Puntualidad', 'req' => 'Máx. 10 min de retraso en el trimestre', 'desc' => 'Refleja disciplina operativa y respeto por los tiempos del equipo y de la organización.'],
+            ['slug' => 'asistencia', 'label' => 'Asistencia', 'req' => 'Máx. 1 falla en el trimestre', 'desc' => 'Demuestra continuidad, compromiso y disponibilidad durante el período evaluado.'],
+            ['slug' => 'disciplinarios', 'label' => 'Disciplinarios', 'req' => 'Sin disciplinarios ni sanciones', 'desc' => 'Asegura que el reconocimiento parta de un comportamiento laboral adecuado y sin sanciones.'],
+            ['slug' => 'capacitaciones', 'label' => 'Capacitaciones', 'req' => '100 % cumplidas', 'desc' => 'Confirma que la persona cuenta con la formación mínima requerida en SIG, SST y su proceso para participar responsablemente.'],
+        ];
+        foreach ($precondiciones as $i => $p) {
+            SumatePrecondicion::updateOrCreate(['slug' => $p['slug']], $p + ['position' => $i]);
+        }
+
+        $acciones = [
+            ['slug' => 'yoAporto', 'label' => 'Yo Aporto', 'icon' => '💡', 'desc' => 'Reporte de hallazgos, no conformidades de proceso y peticiones, quejas o reclamos de clientes.', 'pts_each' => 10, 'max' => 3, 'max_pts' => 30, 'color' => '#2E7D32', 'bg' => '#E8F5E9', 'rango' => '1 a 3 reportes'],
+            ['slug' => 'mejora', 'label' => 'Acciones de Mejora', 'icon' => '🔧', 'desc' => 'Propuesta de actividades concretas que corrigen una falla, optimizan un proceso o previenen que un problema se repita.', 'pts_each' => 10, 'max' => 2, 'max_pts' => 20, 'color' => '#1565C0', 'bg' => '#E3F2FD', 'rango' => '1 a 2 propuestas'],
+            ['slug' => 'infraestructura', 'label' => 'Reporte de Infraestructura', 'icon' => '🏗️', 'desc' => 'Informes sobre daños, deterioros, necesidades locativas o condiciones físicas que afectan el trabajo, la seguridad o la operación.', 'pts_each' => 10, 'max' => 1, 'max_pts' => 10, 'color' => '#F57C00', 'bg' => '#FFF3E0', 'rango' => '1 reporte'],
+            ['slug' => 'inseguras', 'label' => 'Acciones Inseguras', 'icon' => '⚠️', 'desc' => 'Reporte de condiciones o comportamientos inseguros identificados en el entorno de trabajo que puedan generar accidentes.', 'pts_each' => 10, 'max' => 2, 'max_pts' => 20, 'color' => '#C62828', 'bg' => '#FFEBEE', 'rango' => '1 a 2 reportes'],
+            ['slug' => 'redes', 'label' => 'Redes Corporativas', 'icon' => '📢', 'desc' => 'Apoyo activo a las redes de la empresa: compartir contenido institucional, participar en publicaciones y promover la cultura Insumma.', 'pts_each' => 10, 'max' => 2, 'max_pts' => 20, 'color' => '#6A1B9A', 'bg' => '#EDE7F6', 'rango' => '1 a 2 participaciones'],
+        ];
+        foreach ($acciones as $i => $a) {
+            SumateAccion::updateOrCreate(['slug' => $a['slug']], $a + ['position' => $i]);
+        }
+
+        $niveles = [
+            ['nivel' => 1, 'emoji' => '🏆', 'label' => 'Nivel 1', 'min' => 100, 'max' => 100, 'color' => '#2E7D32', 'bg' => '#E8F5E9', 'beneficio' => 'Teletrabajo siguiente trimestre o 1 día libre + Bono $600.000 COP', 'condicion' => 'Para teletrabajar, el rol debe ser elegible. En otro caso se tendrá un día libre durante el trimestre. Se puede ganar máximo 2 veces por año.'],
+            ['nivel' => 2, 'emoji' => '🥈', 'label' => 'Nivel 2', 'min' => 95, 'max' => 99, 'color' => '#6A1B9A', 'bg' => '#EDE7F6', 'beneficio' => 'Teletrabajo siguiente trimestre o 1 día libre + Bono $300.000 COP', 'condicion' => 'Para teletrabajar, el rol debe ser elegible. En otro caso se tendrá un día libre durante el trimestre. Se puede ganar máximo 2 veces por año.'],
+            ['nivel' => 3, 'emoji' => '🥉', 'label' => 'Nivel 3', 'min' => 85, 'max' => 94, 'color' => '#1565C0', 'bg' => '#E3F2FD', 'beneficio' => '1 día completo de descanso remunerado', 'condicion' => 'Para roles elegibles.'],
+            ['nivel' => 4, 'emoji' => '⭐', 'label' => 'Nivel 4', 'min' => 70, 'max' => 84, 'color' => '#F57C00', 'bg' => '#FFF3E0', 'beneficio' => 'Medio día en cumpleaños', 'condicion' => 'Para roles elegibles. Si ya cumplió años, el colaborador puede escoger el medio día libremente.'],
+        ];
+        foreach ($niveles as $n) {
+            SumateNivel::updateOrCreate(['nivel' => $n['nivel']], $n);
+        }
+
+        $juan = User::where('email', 'demo@insumma.co')->first();
+
+        $participantes = [
+            ['id' => 1, 'name' => 'Laura Peña', 'initials' => 'LP', 'color' => '#2E7D32', 'area' => 'Bioseguridad', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
+            ['id' => 2, 'name' => 'Diana Moreno', 'initials' => 'DM', 'color' => '#00695C', 'area' => 'Salud Animal', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 1]],
+            ['id' => 3, 'name' => 'Jorge Morales', 'initials' => 'JM', 'color' => '#F57C00', 'area' => 'Comercial', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 2]],
+            ['id' => 4, 'name' => 'María Castro', 'initials' => 'MC', 'color' => '#1565C0', 'area' => 'Nutrición Animal', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 1]],
+            ['id' => 5, 'name' => 'Andrea Gómez', 'initials' => 'AG', 'color' => '#6A1B9A', 'area' => 'Metalmecánica', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 2]],
+            ['id' => 6, 'name' => 'Roberto Pardo', 'initials' => 'RP', 'color' => '#C62828', 'area' => 'Producción', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 1]],
+            ['id' => 7, 'name' => 'Sandra Ruiz', 'initials' => 'SR', 'color' => '#37474F', 'area' => 'Gestión Humana', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 1]],
+            ['id' => 8, 'name' => 'Carlos Vargas', 'initials' => 'CV', 'color' => '#AD1457', 'area' => 'Logística', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 1, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 0, 'redes' => 1]],
+            ['id' => 9, 'name' => 'Felipe Castro', 'initials' => 'FC', 'color' => '#0277BD', 'area' => 'Sistemas', 'pre' => ['antiguedad' => true, 'puntualidad' => false, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
+            ['id' => 10, 'name' => 'Juan Díaz', 'initials' => 'JD', 'color' => '#388E3C', 'area' => 'Comercial', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
+        ];
+
+        $precondicionIds = SumatePrecondicion::pluck('id', 'slug');
+        $accionIds = SumateAccion::pluck('id', 'slug');
+
+        foreach ($participantes as $data) {
+            $participant = SumateParticipant::updateOrCreate(['id' => $data['id']], [
+                'user_id' => $data['id'] === 10 ? $juan?->id : null, // MY_PARTICIPANT_ID
+                'name' => $data['name'],
+                'initials' => $data['initials'],
+                'color' => $data['color'],
+                'area' => $data['area'],
+            ]);
+
+            foreach ($data['pre'] as $slug => $value) {
+                $participant->preconditionStatuses()->updateOrCreate(
+                    ['precondicion_id' => $precondicionIds[$slug]],
+                    ['value' => $value],
+                );
+            }
+
+            foreach ($data['acc'] as $slug => $count) {
+                $participant->actionCounts()->updateOrCreate(
+                    ['accion_id' => $accionIds[$slug]],
+                    ['count' => $count],
+                );
+            }
+        }
+    }
+}

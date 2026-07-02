@@ -17,6 +17,15 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            // Perfil Insumma (ver .context 00-modelo-de-datos.md)
+            $table->string('role')->default('Colaborador');       // cargo/display
+            $table->enum('role_type', ['admin', 'user'])->default('user'); // permiso
+            $table->string('initials', 4)->nullable();
+            $table->string('area')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('color')->default('#2E7D32');
+            $table->date('joined_at')->nullable();
+            $table->string('extension')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
