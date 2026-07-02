@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Database\Seeders\SumateSeeder;
+use Database\Seeders\TestUsersSeeder;
 use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,6 +17,7 @@ class SumateTest extends TestCase
     {
         parent::setUp();
         $this->seed(UserSeeder::class);
+        $this->seed(TestUsersSeeder::class);
         $this->seed(SumateSeeder::class);
     }
 
@@ -41,6 +43,17 @@ class SumateTest extends TestCase
         // Juan Díaz (usuario actual): capacitaciones=false → NO elegible.
         $this->assertFalse($byName['Juan Díaz']['eligible']);
         $this->assertSame(10, $res->json('myParticipantId'));
+    }
+
+    public function test_own_participant_is_linked_when_logged_in_as_laura(): void
+    {
+        $laura = User::where('email', 'laura.pena@insumma.co')->first();
+
+        $res = $this->actingAs($laura)->getJson('/api/sumate/participants')->assertOk();
+
+        $res->assertJsonPath('myParticipantId', 1);
+        $this->assertSame(100, $res->json('leaderboard.myPoints'));
+        $this->assertNotNull($res->json('leaderboard.myRank'));
     }
 
     public function test_register_action_respects_max_and_recomputes(): void

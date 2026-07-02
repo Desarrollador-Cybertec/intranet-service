@@ -11,6 +11,7 @@ class IdeaSeeder extends Seeder
     public function run(): void
     {
         $juan = User::where('email', 'demo@insumma.co')->first();
+        $laura = User::where('email', 'laura.pena@insumma.co')->first();
 
         // La idea anónima conserva author_id real (auditoría) aunque se muestre "Anónimo".
         Idea::updateOrCreate(['id' => 1], [
@@ -32,7 +33,7 @@ class IdeaSeeder extends Seeder
             'anonymous' => false,
             'votes' => 8,
             'date' => 'Hace 5 días',
-            'author_id' => null,
+            'author_id' => $laura?->id,
             'author' => 'Laura Peña',
             'status' => 'pendiente',
         ]);

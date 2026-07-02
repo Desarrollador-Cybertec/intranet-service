@@ -12,7 +12,9 @@ use Illuminate\Database\Seeder;
 
 /**
  * Datos del programa Súmate (sumateMock.ts). Q3 2026.
- * Juan Díaz (participante id 10 del mock) se enlaza al usuario demo (MY_PARTICIPANT_ID).
+ * Cada participante se enlaza a un usuario real (users.email); name/initials/color/area
+ * se derivan del User, no se duplican, para que sumate_participants.user_id quede
+ * siempre íntegro (requiere que UserSeeder y TestUsersSeeder ya hayan corrido).
  */
 class SumateSeeder extends Seeder
 {
@@ -56,31 +58,39 @@ class SumateSeeder extends Seeder
             SumateNivel::updateOrCreate(['nivel' => $n['nivel']], $n);
         }
 
-        $juan = User::where('email', 'demo@insumma.co')->first();
-
         $participantes = [
-            ['id' => 1, 'name' => 'Laura Peña', 'initials' => 'LP', 'color' => '#2E7D32', 'area' => 'Bioseguridad', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
-            ['id' => 2, 'name' => 'Diana Moreno', 'initials' => 'DM', 'color' => '#00695C', 'area' => 'Salud Animal', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 1]],
-            ['id' => 3, 'name' => 'Jorge Morales', 'initials' => 'JM', 'color' => '#F57C00', 'area' => 'Comercial', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 2]],
-            ['id' => 4, 'name' => 'María Castro', 'initials' => 'MC', 'color' => '#1565C0', 'area' => 'Nutrición Animal', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 1]],
-            ['id' => 5, 'name' => 'Andrea Gómez', 'initials' => 'AG', 'color' => '#6A1B9A', 'area' => 'Metalmecánica', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 2]],
-            ['id' => 6, 'name' => 'Roberto Pardo', 'initials' => 'RP', 'color' => '#C62828', 'area' => 'Producción', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 1]],
-            ['id' => 7, 'name' => 'Sandra Ruiz', 'initials' => 'SR', 'color' => '#37474F', 'area' => 'Gestión Humana', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 1]],
-            ['id' => 8, 'name' => 'Carlos Vargas', 'initials' => 'CV', 'color' => '#AD1457', 'area' => 'Logística', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 1, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 0, 'redes' => 1]],
-            ['id' => 9, 'name' => 'Felipe Castro', 'initials' => 'FC', 'color' => '#0277BD', 'area' => 'Sistemas', 'pre' => ['antiguedad' => true, 'puntualidad' => false, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
-            ['id' => 10, 'name' => 'Juan Díaz', 'initials' => 'JD', 'color' => '#388E3C', 'area' => 'Comercial', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
+            ['id' => 1, 'email' => 'laura.pena@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
+            ['id' => 2, 'email' => 'diana.moreno@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 1]],
+            ['id' => 3, 'email' => 'jorge.morales@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 2]],
+            ['id' => 4, 'email' => 'maria.castro@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 1]],
+            ['id' => 5, 'email' => 'andrea.gomez@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 2]],
+            ['id' => 6, 'email' => 'roberto.pardo@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 1]],
+            ['id' => 7, 'email' => 'sandra.ruiz@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 1]],
+            ['id' => 8, 'email' => 'carlos.vargas@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 1, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 0, 'redes' => 1]],
+            ['id' => 9, 'email' => 'felipe.castro@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => false, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
+            ['id' => 10, 'email' => 'demo@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
         ];
+
+        $usersByEmail = User::whereIn('email', collect($participantes)->pluck('email')->unique())
+            ->get()
+            ->keyBy('email');
 
         $precondicionIds = SumatePrecondicion::pluck('id', 'slug');
         $accionIds = SumateAccion::pluck('id', 'slug');
 
         foreach ($participantes as $data) {
+            $user = $usersByEmail[$data['email']] ?? null;
+
+            if (! $user) {
+                throw new \RuntimeException("SumateSeeder: no existe el usuario {$data['email']}. Corre UserSeeder y TestUsersSeeder primero.");
+            }
+
             $participant = SumateParticipant::updateOrCreate(['id' => $data['id']], [
-                'user_id' => $data['id'] === 10 ? $juan?->id : null, // MY_PARTICIPANT_ID
-                'name' => $data['name'],
-                'initials' => $data['initials'],
-                'color' => $data['color'],
-                'area' => $data['area'],
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'initials' => $user->initials,
+                'color' => $user->color,
+                'area' => $user->area,
             ]);
 
             foreach ($data['pre'] as $slug => $value) {

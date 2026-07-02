@@ -3,12 +3,17 @@
 namespace Database\Seeders;
 
 use App\Models\ForumPost;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class ForumSeeder extends Seeder
 {
     public function run(): void
     {
+        $authorsByName = User::whereIn('email', [
+            'laura.pena@insumma.co', 'maria.castro@insumma.co', 'jorge.morales@insumma.co',
+        ])->get()->keyBy('name');
+
         $posts = [
             [
                 'id' => 1,
@@ -37,6 +42,7 @@ class ForumSeeder extends Seeder
         ];
 
         foreach ($posts as $p) {
+            $p['author_id'] = $authorsByName[$p['author']]->id ?? null;
             ForumPost::updateOrCreate(['id' => $p['id']], $p);
         }
     }
