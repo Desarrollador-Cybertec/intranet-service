@@ -14,7 +14,7 @@ use Illuminate\Database\Seeder;
  * Datos del programa Súmate (sumateMock.ts). Q3 2026.
  * Cada participante se enlaza a un usuario real (users.email); name/initials/color/area
  * se derivan del User, no se duplican, para que sumate_participants.user_id quede
- * siempre íntegro (requiere que UserSeeder y TestUsersSeeder ya hayan corrido).
+ * siempre íntegro (requiere que UserSeeder ya haya corrido).
  */
 class SumateSeeder extends Seeder
 {
@@ -59,16 +59,8 @@ class SumateSeeder extends Seeder
         }
 
         $participantes = [
-            ['id' => 1, 'email' => 'laura.pena@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
-            ['id' => 2, 'email' => 'diana.moreno@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 1]],
-            ['id' => 3, 'email' => 'jorge.morales@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 2]],
-            ['id' => 4, 'email' => 'maria.castro@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 1]],
-            ['id' => 5, 'email' => 'andrea.gomez@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 2]],
-            ['id' => 6, 'email' => 'roberto.pardo@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 1]],
-            ['id' => 7, 'email' => 'sandra.ruiz@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 1, 'redes' => 1]],
-            ['id' => 8, 'email' => 'carlos.vargas@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 1, 'mejora' => 1, 'infraestructura' => 1, 'inseguras' => 0, 'redes' => 1]],
-            ['id' => 9, 'email' => 'felipe.castro@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => false, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
-            ['id' => 10, 'email' => 'demo@insumma.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
+            ['id' => 1, 'email' => 'user@cybertec.com.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
+            ['id' => 2, 'email' => 'admin@cybertec.com.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
         ];
 
         $usersByEmail = User::whereIn('email', collect($participantes)->pluck('email')->unique())
@@ -82,7 +74,7 @@ class SumateSeeder extends Seeder
             $user = $usersByEmail[$data['email']] ?? null;
 
             if (! $user) {
-                throw new \RuntimeException("SumateSeeder: no existe el usuario {$data['email']}. Corre UserSeeder y TestUsersSeeder primero.");
+                throw new \RuntimeException("SumateSeeder: no existe el usuario {$data['email']}. Corre UserSeeder primero.");
             }
 
             $participant = SumateParticipant::updateOrCreate(['id' => $data['id']], [

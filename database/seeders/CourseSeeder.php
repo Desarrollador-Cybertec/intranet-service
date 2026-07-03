@@ -23,10 +23,10 @@ class CourseSeeder extends Seeder
             Course::updateOrCreate(['id' => $c['id']], $c);
         }
 
-        // Juan Díaz (usuario demo) tiene la Inducción corporativa completada (curso id 1).
-        $juan = User::where('email', 'demo@insumma.co')->first();
-        if ($juan) {
-            $juan->enrollments()->updateOrCreate(
+        // Usuario Cybertec (usuario de prueba) tiene la Inducción corporativa completada (curso id 1).
+        $user = User::where('email', 'user@cybertec.com.co')->first();
+        if ($user) {
+            $user->enrollments()->updateOrCreate(
                 ['course_id' => 1],
                 ['completed' => true],
             );

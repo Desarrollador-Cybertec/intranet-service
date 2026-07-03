@@ -7,15 +7,18 @@ use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
 {
+    /**
+     * Únicas 2 cuentas de prueba de la app: todo el resto de datos iniciales
+     * (Súmate, Ideas, Foro, Capacitaciones) se enlaza a estos 2 usuarios reales.
+     */
     public function run(): void
     {
-        // Cuentas de prueba del contrato (01-roles-y-permisos.md / authMock.ts).
-        User::updateOrCreate(['email' => 'demo@insumma.co'], [
-            'name' => 'Juan Díaz',
-            'password' => 'Insumma2026!',
+        User::updateOrCreate(['email' => 'user@cybertec.com.co'], [
+            'name' => 'Usuario Cybertec',
+            'password' => 'Cybertec2026!',
             'role' => 'Colaborador',
             'role_type' => 'user',
-            'initials' => 'JD',
+            'initials' => 'UC',
             'area' => 'Comercial',
             'phone' => 'Ext. 305',
             'color' => '#2E7D32',
@@ -23,12 +26,12 @@ class UserSeeder extends Seeder
             'extension' => '305',
         ]);
 
-        User::updateOrCreate(['email' => 'admin@insumma.co'], [
-            'name' => 'Administrador IBG',
-            'password' => 'Admin2026#',
+        User::updateOrCreate(['email' => 'admin@cybertec.com.co'], [
+            'name' => 'Administrador Cybertec',
+            'password' => 'Cybertec2026!',
             'role' => 'Administrador',
             'role_type' => 'admin',
-            'initials' => 'AI',
+            'initials' => 'AC',
             'area' => 'TI',
             'phone' => 'Ext. 100',
             'color' => '#1565C0',

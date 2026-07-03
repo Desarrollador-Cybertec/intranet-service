@@ -11,7 +11,7 @@ class ForumSeeder extends Seeder
     public function run(): void
     {
         $authorsByName = User::whereIn('email', [
-            'laura.pena@insumma.co', 'maria.castro@insumma.co', 'jorge.morales@insumma.co',
+            'user@cybertec.com.co', 'admin@cybertec.com.co',
         ])->get()->keyBy('name');
 
         $posts = [
@@ -21,7 +21,7 @@ class ForumSeeder extends Seeder
                 'body' => 'Necesito orientación para una visita la próxima semana. ¿El protocolo de agosto sigue vigente o hay uno nuevo para el segundo semestre?',
                 'tag' => 'Bioseguridad',
                 'tags' => ['Bioseguridad', 'Protocolos', '🔥 Popular'],
-                'votes' => 24, 'author' => 'Laura Peña', 'date' => 'Hace 3 horas', 'replies' => 8,
+                'votes' => 24, 'author' => 'Usuario Cybertec', 'date' => 'Hace 3 horas', 'replies' => 8,
             ],
             [
                 'id' => 2,
@@ -29,7 +29,7 @@ class ForumSeeder extends Seeder
                 'body' => 'Estoy trabajando con un cliente en Lebrija con problemas de baja condición corporal en verano. ¿Algún colega tiene experiencia con el suplemento BM-450?',
                 'tag' => 'Nutrición',
                 'tags' => ['Nutrición', 'Bovinos'],
-                'votes' => 11, 'author' => 'María Castro', 'date' => 'Hace 1 día', 'replies' => 5,
+                'votes' => 11, 'author' => 'Administrador Cybertec', 'date' => 'Hace 1 día', 'replies' => 5,
             ],
             [
                 'id' => 3,
@@ -37,7 +37,7 @@ class ForumSeeder extends Seeder
                 'body' => 'Sería muy útil tener comunicación en tiempo real durante las visitas técnicas. ¿Alguien más lo ve necesario? ¿Qué herramienta proponen?',
                 'tag' => 'Herramientas',
                 'tags' => ['Herramientas', 'Comunicación'],
-                'votes' => 7, 'author' => 'Jorge Morales', 'date' => 'Hace 2 días', 'replies' => 12,
+                'votes' => 7, 'author' => 'Usuario Cybertec', 'date' => 'Hace 2 días', 'replies' => 12,
             ],
         ];
 

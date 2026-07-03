@@ -8,8 +8,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | El frontend (Vite dev en :5173) consume la API con tokens Bearer, no
-    | cookies. Permitimos los orígenes de desarrollo del front de Insumma.
-    | Añade el dominio de producción cuando se despliegue.
+    | cookies. Permitimos los orígenes de desarrollo del front de Insumma
+    | y el dominio de producción (intranet.insummabg.net → service.insummabg.net).
     |
     */
 
@@ -21,6 +21,7 @@ return [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost:3000',
+        'https://intranet.insummabg.net',
     ],
 
     'allowed_origins_patterns' => [],

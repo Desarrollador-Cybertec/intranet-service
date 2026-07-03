@@ -20,7 +20,7 @@ class SeederIntegrityTest extends TestCase
         $this->assertSame(0, SumateParticipant::whereNull('user_id')->count());
         $this->assertSame(0, ForumPost::whereNull('author_id')->count());
 
-        $laura = User::where('email', 'laura.pena@insumma.co')->first();
-        $this->assertSame($laura->id, Idea::find(2)->author_id);
+        $admin = User::where('email', 'admin@cybertec.com.co')->first();
+        $this->assertSame($admin->id, Idea::find(2)->author_id);
     }
 }
