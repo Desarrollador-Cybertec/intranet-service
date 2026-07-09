@@ -14,7 +14,7 @@ use Illuminate\Database\Seeder;
  * Datos del programa Súmate (sumateMock.ts). Q3 2026.
  * Cada participante se enlaza a un usuario real (users.email); name/initials/color/area
  * se derivan del User, no se duplican, para que sumate_participants.user_id quede
- * siempre íntegro (requiere que UserSeeder ya haya corrido).
+ * siempre íntegro (requiere que los usuarios ya existan: scripts/create-test-users.php).
  */
 class SumateSeeder extends Seeder
 {
@@ -74,7 +74,7 @@ class SumateSeeder extends Seeder
             $user = $usersByEmail[$data['email']] ?? null;
 
             if (! $user) {
-                throw new \RuntimeException("SumateSeeder: no existe el usuario {$data['email']}. Corre UserSeeder primero.");
+                throw new \RuntimeException("SumateSeeder: no existe el usuario {$data['email']}. Corre scripts/create-test-users.php primero.");
             }
 
             $participant = SumateParticipant::updateOrCreate(['id' => $data['id']], [

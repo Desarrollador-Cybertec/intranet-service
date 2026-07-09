@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Database\Seeders\SumateSeeder;
-use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +14,10 @@ class SumateTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(UserSeeder::class);
+
+        User::factory()->create(['email' => 'user@cybertec.com.co', 'name' => 'Usuario Cybertec', 'role_type' => 'user', 'initials' => 'UC', 'area' => 'Comercial']);
+        User::factory()->create(['email' => 'admin@cybertec.com.co', 'name' => 'Administrador Cybertec', 'role_type' => 'admin', 'initials' => 'AC', 'area' => 'TI']);
+
         $this->seed(SumateSeeder::class);
     }
 
