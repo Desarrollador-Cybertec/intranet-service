@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role', 'role_type', 'initials', 'area', 'phone', 'color', 'joined_at', 'extension', 'profile_completed_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'role_type', 'initials', 'area', 'phone', 'color', 'joined_at', 'extension', 'profile_completed_at', 'active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -32,6 +32,16 @@ class User extends Authenticatable
     private const COLORS = ['#2E7D32', '#1565C0', '#F57C00', '#C62828', '#6A1B9A'];
 
     /**
+     * Sin esto, un usuario recién creado tiene `active` en null hasta releerlo de
+     * la base de datos, y EnsureActive lo tomaría por desactivado.
+     *
+     * @var array<string,mixed>
+     */
+    protected $attributes = [
+        'active' => true,
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -43,6 +53,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'joined_at' => 'date',
             'profile_completed_at' => 'datetime',
+            'active' => 'boolean',
         ];
     }
 

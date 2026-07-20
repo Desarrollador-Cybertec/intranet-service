@@ -13,7 +13,7 @@ class ForumVoteTest extends TestCase
 
     public function test_vote_is_authoritative_and_idempotent(): void
     {
-        $user = User::create(['name' => 'U', 'email' => 'u@x.co', 'password' => 'secret123', 'role_type' => 'user']);
+        $user = User::factory()->create(['name' => 'U', 'email' => 'u@x.co', 'password' => 'secret123', 'role_type' => 'user']);
         $post = ForumPost::create([
             'title' => 't', 'body' => 'b', 'tag' => 'x', 'tags' => ['x'], 'votes' => 24,
             'author' => 'A', 'date' => 'hoy', 'replies' => 0,
@@ -34,7 +34,7 @@ class ForumVoteTest extends TestCase
 
     public function test_vote_requires_valid_direction(): void
     {
-        $user = User::create(['name' => 'U', 'email' => 'u@x.co', 'password' => 'secret123', 'role_type' => 'user']);
+        $user = User::factory()->create(['name' => 'U', 'email' => 'u@x.co', 'password' => 'secret123', 'role_type' => 'user']);
         $post = ForumPost::create(['title' => 't', 'body' => 'b', 'tag' => 'x', 'tags' => [], 'votes' => 0, 'author' => 'A', 'date' => 'hoy', 'replies' => 0]);
 
         $this->actingAs($user)->postJson("/api/forum/posts/{$post->id}/vote", ['direction' => 'sideways'])

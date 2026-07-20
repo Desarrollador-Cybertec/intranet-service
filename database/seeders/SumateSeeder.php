@@ -26,12 +26,13 @@ class SumateSeeder extends Seeder
             'active' => true,
         ]);
 
+        // auto_source != null → la calcula el servidor; el admin no la marca a mano.
         $precondiciones = [
-            ['slug' => 'antiguedad', 'label' => 'Antigüedad', 'req' => '> 3 meses', 'desc' => 'Garantiza que la persona ya conoce mínimamente la empresa, su rol y la forma básica de trabajo.'],
-            ['slug' => 'puntualidad', 'label' => 'Puntualidad', 'req' => 'Máx. 10 min de retraso en el trimestre', 'desc' => 'Refleja disciplina operativa y respeto por los tiempos del equipo y de la organización.'],
-            ['slug' => 'asistencia', 'label' => 'Asistencia', 'req' => 'Máx. 1 falla en el trimestre', 'desc' => 'Demuestra continuidad, compromiso y disponibilidad durante el período evaluado.'],
-            ['slug' => 'disciplinarios', 'label' => 'Disciplinarios', 'req' => 'Sin disciplinarios ni sanciones', 'desc' => 'Asegura que el reconocimiento parta de un comportamiento laboral adecuado y sin sanciones.'],
-            ['slug' => 'capacitaciones', 'label' => 'Capacitaciones', 'req' => '100 % cumplidas', 'desc' => 'Confirma que la persona cuenta con la formación mínima requerida en SIG, SST y su proceso para participar responsablemente.'],
+            ['slug' => 'antiguedad', 'label' => 'Antigüedad', 'req' => '> 3 meses', 'desc' => 'Garantiza que la persona ya conoce mínimamente la empresa, su rol y la forma básica de trabajo.', 'auto_source' => 'antiguedad'],
+            ['slug' => 'puntualidad', 'label' => 'Puntualidad', 'req' => 'Máx. 10 min de retraso en el trimestre', 'desc' => 'Refleja disciplina operativa y respeto por los tiempos del equipo y de la organización.', 'auto_source' => null],
+            ['slug' => 'asistencia', 'label' => 'Asistencia', 'req' => 'Máx. 1 falla en el trimestre', 'desc' => 'Demuestra continuidad, compromiso y disponibilidad durante el período evaluado.', 'auto_source' => null],
+            ['slug' => 'disciplinarios', 'label' => 'Disciplinarios', 'req' => 'Sin disciplinarios ni sanciones', 'desc' => 'Asegura que el reconocimiento parta de un comportamiento laboral adecuado y sin sanciones.', 'auto_source' => null],
+            ['slug' => 'capacitaciones', 'label' => 'Capacitaciones', 'req' => '100 % cumplidas', 'desc' => 'Confirma que la persona cuenta con la formación mínima requerida en SIG, SST y su proceso para participar responsablemente.', 'auto_source' => 'capacitaciones'],
         ];
         foreach ($precondiciones as $i => $p) {
             SumatePrecondicion::updateOrCreate(['slug' => $p['slug']], $p + ['position' => $i]);
@@ -59,8 +60,9 @@ class SumateSeeder extends Seeder
         }
 
         $participantes = [
-            ['email' => 'user@cybertec.com.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
-            ['email' => 'admin@cybertec.com.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
+            // Solo las manuales: antigüedad y capacitaciones las deriva SumateService.
+            ['email' => 'user@cybertec.com.co', 'pre' => ['puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
+            ['email' => 'admin@cybertec.com.co', 'pre' => ['puntualidad' => true, 'asistencia' => true, 'disciplinarios' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
         ];
 
         $usersByEmail = User::whereIn('email', collect($participantes)->pluck('email')->unique())
