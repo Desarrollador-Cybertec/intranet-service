@@ -12,7 +12,7 @@ class PermissionsTest extends TestCase
 
     private function user(string $role = 'user'): User
     {
-        return User::create([
+        return User::factory()->create([
             'name' => 'U', 'email' => uniqid().'@x.co', 'password' => 'secret123', 'role_type' => $role,
         ]);
     }

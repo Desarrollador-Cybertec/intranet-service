@@ -24,12 +24,21 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $name = fake()->name();
+
         return [
-            'name' => fake()->name(),
+            'name' => $name,
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            // Perfil completo por defecto: si no, EnsureProfileCompleted responde 428.
+            'role' => 'Colaborador',
+            'area' => fake()->randomElement(['Comercial', 'TI', 'Gestión Humana', 'Logística']),
+            'phone' => fake()->numerify('3#########'),
+            'initials' => User::initialsFrom($name),
+            'joined_at' => fake()->dateTimeBetween('-3 years')->format('Y-m-d'),
+            'profile_completed_at' => now(),
         ];
     }
 
@@ -40,6 +49,35 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Usuario recién importado de la nómina: solo correo y contraseña.
+     * Debe pasar por /auth/me antes de poder usar el resto de la API.
+     */
+    public function imported(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => null,
+            'area' => null,
+            'phone' => null,
+            'joined_at' => null,
+            'profile_completed_at' => null,
+        ]);
+    }
+
+    /** Cuenta desactivada por un administrador: no puede iniciar sesión. */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => ['active' => false]);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_type' => 'admin',
+            'role' => 'Administrador',
         ]);
     }
 }

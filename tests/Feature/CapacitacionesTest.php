@@ -13,7 +13,7 @@ class CapacitacionesTest extends TestCase
 
     public function test_progress_is_relative_to_user(): void
     {
-        $user = User::create(['name' => 'U', 'email' => 'u@x.co', 'password' => 'secret123', 'role_type' => 'user']);
+        $user = User::factory()->create(['name' => 'U', 'email' => 'u@x.co', 'password' => 'secret123', 'role_type' => 'user']);
 
         $courses = collect(range(1, 4))->map(fn ($i) => Course::create([
             'label' => "Curso $i", 'icon' => '📘', 'tag' => 'Obligatorio', 'tag_color' => '#000', 'tag_bg' => '#fff',
@@ -32,7 +32,7 @@ class CapacitacionesTest extends TestCase
 
     public function test_enrollment_returns_success(): void
     {
-        $user = User::create(['name' => 'U', 'email' => 'u@x.co', 'password' => 'secret123', 'role_type' => 'user']);
+        $user = User::factory()->create(['name' => 'U', 'email' => 'u@x.co', 'password' => 'secret123', 'role_type' => 'user']);
         $course = Course::create([
             'label' => 'C', 'icon' => '📘', 'tag' => 'Obligatorio', 'tag_color' => '#000', 'tag_bg' => '#fff',
             'desc' => 'd', 'duration' => '4 horas', 'modality' => 'Virtual',

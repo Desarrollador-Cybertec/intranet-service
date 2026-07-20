@@ -13,7 +13,7 @@ class IdeaAnonymityTest extends TestCase
 
     public function test_anonymous_idea_masks_author_but_persists_real_author(): void
     {
-        $user = User::create(['name' => 'Juan Díaz', 'email' => 'j@x.co', 'password' => 'secret123', 'role_type' => 'user']);
+        $user = User::factory()->create(['name' => 'Juan Díaz', 'email' => 'j@x.co', 'password' => 'secret123', 'role_type' => 'user']);
 
         $res = $this->actingAs($user)->postJson('/api/ideas', [
             'category' => 'Bienestar laboral',
@@ -36,8 +36,8 @@ class IdeaAnonymityTest extends TestCase
 
     public function test_admin_sees_real_author_of_anonymous_idea(): void
     {
-        $author = User::create(['name' => 'Juan Díaz', 'email' => 'j@x.co', 'password' => 'secret123', 'role_type' => 'user']);
-        $admin = User::create(['name' => 'Admin', 'email' => 'a@x.co', 'password' => 'secret123', 'role_type' => 'admin']);
+        $author = User::factory()->create(['name' => 'Juan Díaz', 'email' => 'j@x.co', 'password' => 'secret123', 'role_type' => 'user']);
+        $admin = User::factory()->create(['name' => 'Admin', 'email' => 'a@x.co', 'password' => 'secret123', 'role_type' => 'admin']);
 
         Idea::create([
             'category' => 'Bienestar laboral', 'title' => 'Idea anónima', 'description' => str_repeat('x', 30),
