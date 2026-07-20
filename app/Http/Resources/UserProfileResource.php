@@ -26,6 +26,8 @@ class UserProfileResource extends JsonResource
             'color' => $this->color,
             'joinedAt' => $this->joined_at?->format('Y-m-d'),
             'extension' => $this->extension,
+            'profileCompleted' => $this->isProfileComplete(),
+            'missingFields' => $this->missingProfileFields(),
         ];
     }
 }

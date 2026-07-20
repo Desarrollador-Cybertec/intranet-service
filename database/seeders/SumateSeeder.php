@@ -5,9 +5,9 @@ namespace Database\Seeders;
 use App\Models\SumateAccion;
 use App\Models\SumateConfig;
 use App\Models\SumateNivel;
-use App\Models\SumateParticipant;
 use App\Models\SumatePrecondicion;
 use App\Models\User;
+use App\Services\SumateService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -18,7 +18,7 @@ use Illuminate\Database\Seeder;
  */
 class SumateSeeder extends Seeder
 {
-    public function run(): void
+    public function run(SumateService $sumate): void
     {
         SumateConfig::updateOrCreate(['trimestre' => 'Q3 2026'], [
             'periodo_label' => 'Julio – Septiembre 2026',
@@ -59,38 +59,25 @@ class SumateSeeder extends Seeder
         }
 
         $participantes = [
-            ['id' => 1, 'email' => 'user@cybertec.com.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
-            ['id' => 2, 'email' => 'admin@cybertec.com.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
+            ['email' => 'user@cybertec.com.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
+            ['email' => 'admin@cybertec.com.co', 'pre' => ['antiguedad' => true, 'puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true, 'capacitaciones' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
         ];
 
         $usersByEmail = User::whereIn('email', collect($participantes)->pluck('email')->unique())
             ->get()
             ->keyBy('email');
 
-        $precondicionIds = SumatePrecondicion::pluck('id', 'slug');
         $accionIds = SumateAccion::pluck('id', 'slug');
 
         foreach ($participantes as $data) {
             $user = $usersByEmail[$data['email']] ?? null;
 
             if (! $user) {
-                throw new \RuntimeException("SumateSeeder: no existe el usuario {$data['email']}. Corre scripts/create-test-users.php primero.");
+                throw new \RuntimeException("SumateSeeder: no existe el usuario {$data['email']}. Corre php artisan users:import primero.");
             }
 
-            $participant = SumateParticipant::updateOrCreate(['id' => $data['id']], [
-                'user_id' => $user->id,
-                'name' => $user->name,
-                'initials' => $user->initials,
-                'color' => $user->color,
-                'area' => $user->area,
-            ]);
-
-            foreach ($data['pre'] as $slug => $value) {
-                $participant->preconditionStatuses()->updateOrCreate(
-                    ['precondicion_id' => $precondicionIds[$slug]],
-                    ['value' => $value],
-                );
-            }
+            $participant = $sumate->syncParticipantFor($user);
+            $sumate->setPreconditions($participant, $data['pre']);
 
             foreach ($data['acc'] as $slug => $count) {
                 $participant->actionCounts()->updateOrCreate(

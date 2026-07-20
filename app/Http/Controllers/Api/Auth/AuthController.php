@@ -9,13 +9,15 @@ use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserProfileResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\SumateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly SumateService $sumate) {}
+
     /** 🌐 POST /api/auth/login */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -47,9 +49,16 @@ class AuthController extends Controller
             'area' => $request->area,
             'role' => 'Colaborador',
             'role_type' => 'user', // forzado: registro público siempre es user
-            'initials' => $this->initialsFrom($request->name),
+            'initials' => User::initialsFrom($request->name),
+            'color' => User::colorFrom($request->email),
             'joined_at' => now()->toDateString(),
         ]);
+
+        if ($user->isProfileComplete()) {
+            $user->forceFill(['profile_completed_at' => now()])->save();
+        }
+
+        $this->sumate->syncParticipantFor($user);
 
         $token = $user->createToken('intranet')->plainTextToken;
 
@@ -73,12 +82,33 @@ class AuthController extends Controller
         return new UserProfileResource($request->user());
     }
 
-    /** PATCH /api/auth/me — 👤 propio; email no editable. */
+    /**
+     * PATCH /api/auth/me — 👤 propio; email no editable.
+     * Es también el endpoint del onboarding: al quedar el perfil completo se
+     * sella `profile_completed_at` y se levanta el bloqueo (EnsureProfileCompleted).
+     */
     public function updateMe(UpdateProfileRequest $request): UserProfileResource
     {
         $user = $request->user();
-        $user->fill($request->validated());
+        $data = $request->profileData();
+
+        $user->fill($data);
+
+        if (array_key_exists('name', $data)) {
+            $user->initials = User::initialsFrom($user->name);
+        }
+
+        if (! $user->color) {
+            $user->color = User::colorFrom($user->email);
+        }
+
+        if ($user->isProfileComplete() && ! $user->profile_completed_at) {
+            $user->profile_completed_at = now();
+        }
+
         $user->save();
+
+        $this->sumate->syncParticipantFor($user);
 
         return new UserProfileResource($user);
     }
@@ -90,16 +120,5 @@ class AuthController extends Controller
 
         // Aquí se dispararía el envío del correo de recuperación.
         return response()->json(['success' => true]);
-    }
-
-    private function initialsFrom(string $name): string
-    {
-        $parts = preg_split('/\s+/', trim($name)) ?: [];
-        $initials = collect($parts)
-            ->take(2)
-            ->map(fn ($w) => Str::upper(Str::substr($w, 0, 1)))
-            ->implode('');
-
-        return $initials !== '' ? $initials : '??';
     }
 }

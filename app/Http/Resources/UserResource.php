@@ -23,6 +23,8 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'area' => $this->area,
             'phone' => $this->phone,
+            'profileCompleted' => $this->isProfileComplete(),
+            'missingFields' => $this->missingProfileFields(),
         ];
     }
 }

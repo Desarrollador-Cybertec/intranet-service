@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Exceptions\NotEligibleException;
 use App\Models\SumateAccion;
 use App\Models\SumateNivel;
 use App\Models\SumateParticipant;
+use App\Models\SumatePrecondicion;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -67,11 +70,71 @@ class SumateService
     }
 
     /**
+     * Crea o actualiza el participante ligado a un usuario, copiando su perfil.
+     * Idempotente: se puede llamar en cada import, registro o edición de perfil.
+     */
+    public function syncParticipantFor(User $user): SumateParticipant
+    {
+        $participant = SumateParticipant::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'name' => $user->name,
+                'initials' => $user->initials ?: User::initialsFrom($user->name),
+                'color' => $user->color ?: User::colorFrom($user->email),
+                'area' => $user->area ?? '',
+            ],
+        );
+
+        // Todo participante arranca con las precondiciones en false; el admin las valida.
+        foreach (SumatePrecondicion::pluck('id') as $precondicionId) {
+            $participant->preconditionStatuses()->firstOrCreate(
+                ['precondicion_id' => $precondicionId],
+                ['value' => false],
+            );
+        }
+
+        return $participant;
+    }
+
+    /**
+     * Marca las precondiciones de un participante. Solo aplica los slugs recibidos.
+     *
+     * @param  array<string,bool>  $pre
+     */
+    public function setPreconditions(SumateParticipant $participant, array $pre): SumateParticipant
+    {
+        $ids = SumatePrecondicion::pluck('id', 'slug');
+
+        DB::transaction(function () use ($participant, $pre, $ids) {
+            foreach ($pre as $slug => $value) {
+                if (! isset($ids[$slug])) {
+                    continue;
+                }
+
+                $participant->preconditionStatuses()->updateOrCreate(
+                    ['precondicion_id' => $ids[$slug]],
+                    ['value' => (bool) $value],
+                );
+            }
+        });
+
+        return $participant->fresh(['actionCounts.accion', 'preconditionStatuses.precondicion']);
+    }
+
+    /**
      * Registra/retira una acción respetando el max por acción. Recalcula estado.
      * $delta puede ser positivo o negativo. El count nunca baja de 0 ni supera max.
+     *
+     * @throws NotEligibleException si se intenta sumar a un participante no elegible.
      */
     public function registerAction(SumateParticipant $participant, string $accionSlug, int $delta): SumateParticipant
     {
+        if ($delta > 0 && ! $this->isEligible($participant)) {
+            throw new NotEligibleException(
+                'El participante no cumple todas las pre-condiciones y no puede acumular puntos.'
+            );
+        }
+
         $accion = SumateAccion::where('slug', $accionSlug)->firstOrFail();
 
         DB::transaction(function () use ($participant, $accion, $delta) {

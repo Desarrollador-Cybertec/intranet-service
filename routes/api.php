@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Contrato: .context/mocks/.context/02-contrato-api.md
 | 🌐 = público · resto requiere auth:sanctum · escritura de gestión = role:admin
+| Todo salvo /auth/me y /auth/logout exige perfil completo (428 si falta).
 | Calendario y Salas quedan FUERA DE ALCANCE (Nextcloud CalDAV).
 */
 
@@ -30,7 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::patch('/auth/me', [AuthController::class, 'updateMe']);
+});
 
+// ── Resto de la app: exige además tener el perfil completo ────────
+Route::middleware(['auth:sanctum', 'profile.completed'])->group(function () {
     // ── Entérate: noticias y comunicados ──────────────────────────
     Route::get('/news', [ArticleController::class, 'index'])->defaults('type', 'noticias');
     Route::get('/news/{article}', [ArticleController::class, 'show'])->defaults('type', 'noticias');
@@ -56,9 +60,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ideas', [IdeaController::class, 'store']);
     Route::post('/ideas/{idea}/vote', [IdeaController::class, 'vote']);
 
-    // ── Súmate ────────────────────────────────────────────────────
+    // ── Súmate (lectura para todos; otorgar puntos es de admin) ───
     Route::get('/sumate/participants', [SumateController::class, 'participants']);
-    Route::post('/sumate/acciones', [SumateController::class, 'registerAction']); // 👤
 
     // ── Capacitaciones ────────────────────────────────────────────
     Route::get('/capacitaciones', [CapacitacionController::class, 'index']);
@@ -92,6 +95,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/directory', [DirectoryController::class, 'store']);
         Route::put('/directory/{directoryPerson}', [DirectoryController::class, 'update']);
         Route::delete('/directory/{directoryPerson}', [DirectoryController::class, 'destroy']);
+
+        // Súmate: el admin otorga acciones y valida pre-condiciones
+        Route::post('/sumate/acciones', [SumateController::class, 'registerAction']);
+        Route::patch('/sumate/participants/{participant}/precondiciones', [SumateController::class, 'setPreconditions']);
+        Route::put('/sumate/config', [SumateController::class, 'updateConfig']);
 
         // Ideas (moderación / estado)
         Route::patch('/ideas/{idea}', [IdeaController::class, 'update']);

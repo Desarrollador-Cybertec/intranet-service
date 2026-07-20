@@ -73,19 +73,58 @@ class SumateController extends Controller
     }
 
     /**
-     * POST /api/sumate/acciones · 👤 — registra/retira una acción del participante actual.
+     * POST /api/sumate/acciones · admin — otorga/retira una acción a un participante.
+     * Los puntos los concede Gestión Humana, no el propio colaborador.
      */
     public function registerAction(SumateActionRequest $request): JsonResponse
     {
-        $participant = $request->user()->sumateParticipant;
-
-        if (! $participant) {
-            return response()->json(['message' => 'No participas en el programa Súmate.'], 403);
-        }
+        $participant = SumateParticipant::findOrFail($request->participantId);
 
         $participant = $this->sumate->registerAction($participant, $request->accionId, $request->delta);
 
         return response()->json($this->sumate->summary($participant));
+    }
+
+    /**
+     * PATCH /api/sumate/participants/{participant}/precondiciones · admin
+     * Body: { "pre": { "antiguedad": true, "puntualidad": false, ... } }
+     */
+    public function setPreconditions(Request $request, SumateParticipant $participant): JsonResponse
+    {
+        $data = $request->validate([
+            'pre' => ['required', 'array'],
+            'pre.*' => ['boolean'],
+        ]);
+
+        $participant = $this->sumate->setPreconditions($participant, $data['pre']);
+
+        return response()->json($this->sumate->summary($participant));
+    }
+
+    /**
+     * PUT /api/sumate/config · admin — trimestre activo del programa.
+     */
+    public function updateConfig(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'trimestre' => ['required', 'string', 'max:255'],
+            'periodoLabel' => ['required', 'string', 'max:255'],
+            'cierreLabel' => ['required', 'string', 'max:255'],
+        ]);
+
+        $config = SumateConfig::updateOrCreate(['trimestre' => $data['trimestre']], [
+            'periodo_label' => $data['periodoLabel'],
+            'cierre_label' => $data['cierreLabel'],
+            'active' => true,
+        ]);
+
+        SumateConfig::where('id', '!=', $config->id)->update(['active' => false]);
+
+        return response()->json([
+            'trimestre' => $config->trimestre,
+            'periodoLabel' => $config->periodo_label,
+            'cierreLabel' => $config->cierre_label,
+        ]);
     }
 
     /**
@@ -109,6 +148,7 @@ class SumateController extends Controller
 
         return [
             'id' => $p->id,
+            'userId' => $p->user_id,
             'name' => $p->name,
             'initials' => $p->initials,
             'color' => $p->color,
