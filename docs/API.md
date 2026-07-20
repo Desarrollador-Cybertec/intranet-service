@@ -41,6 +41,24 @@ Tokens **Bearer** (Laravel Sanctum, personal access tokens).
 
 > Envía siempre `Accept: application/json` para que los errores lleguen como JSON (`{message}`) y no como HTML.
 
+### Carga inicial de usuarios (nómina)
+
+Los colaboradores no se registran solos: se cargan desde el CSV exportado de la
+hoja de cálculo de nómina (`Nombre Mostrado, Correo Electronico, Contraseña`).
+
+```bash
+php artisan users:import ".context/MINextcloud Insumma.csv" --dry-run   # revisa
+php artisan users:import ".context/MINextcloud Insumma.csv"             # importa
+```
+
+- Es **idempotente**: volver a correrlo no duplica usuarios ni pisa la contraseña
+  ni el perfil de cuentas que ya existían.
+- `role_type` se asigna por dominio del correo: `--admin-domain` (por defecto
+  `cybertec.com.co`) entra como `admin`; el resto como `user`.
+- Cada usuario importado queda con **perfil incompleto** (sin cargo, área,
+  teléfono ni fecha de ingreso) y se le crea su participante de Súmate.
+  Ver [§ 428 — Perfil incompleto](#428--perfil-incompleto).
+
 ---
 
 ## 3. Convenciones de respuesta
@@ -64,11 +82,12 @@ Campo `user.roleType`:
 
 | roleType | Puede |
 |---|---|
-| `user` | Leer todo el contenido, votar, crear posts/ideas propias, registrar sus acciones Súmate, inscribirse, editar su perfil y sus propios recursos (👤). |
-| `admin` | Todo lo de `user` **+** CRUD de contenido, catálogos, moderación y gestión. |
+| `user` | Leer todo el contenido, votar, crear posts/ideas propias, **consultar** su estado Súmate, inscribirse, editar su perfil y sus propios recursos (👤). |
+| `admin` | Todo lo de `user` **+** CRUD de contenido, catálogos, moderación y gestión, **+ administración de usuarios**, **+ otorgar puntos y validar pre-condiciones de Súmate**. |
 
 - `user.role` (p. ej. "Colaborador") es solo **cargo de display**; la autorización usa `roleType`.
 - **Ownership (👤):** un `user` solo edita/elimina sus propios recursos; un `admin` opera sobre cualquiera.
+- **Súmate:** un colaborador **no** se autorregistra puntos. Gestión Humana (admin) los otorga.
 
 ---
 
@@ -81,8 +100,28 @@ Campo `user.roleType`:
 | `404` | Recurso inexistente | `Recurso no encontrado.` |
 | `409` | Conflicto (email duplicado) | `Ya existe una cuenta con ese correo.` |
 | `422` | Validación fallida | `{ "message": "...", "errors": { "campo": ["..."] } }` |
+| `428` | Perfil incompleto (usuario importado) | `Debes completar tu perfil antes de continuar.` |
+
+Una cuenta **desactivada** responde `403` (`Tu cuenta está desactivada. Comunícate con Gestión Humana.`) tanto en el login como en cualquier endpoint autenticado.
 
 El front muestra `message` directamente al usuario.
+
+### 428 — Perfil incompleto
+
+Los usuarios cargados con `php artisan users:import` solo tienen nombre, correo y
+contraseña. Mientras `profileCompleted` sea `false`, **todos** los endpoints
+autenticados responden `428`, excepto `POST /api/auth/logout`, `GET /api/auth/me`
+y `PATCH /api/auth/me` (los que el onboarding necesita).
+
+```json
+{
+  "message": "Debes completar tu perfil antes de continuar.",
+  "missingFields": ["role", "area", "phone", "joinedAt"]
+}
+```
+
+El front redirige a `/completar-perfil`, envía un `PATCH /api/auth/me` con los
+campos faltantes y desde ese momento la sesión opera con normalidad.
 
 ---
 
@@ -146,14 +185,16 @@ Cada endpoint documenta:
 - **Visibilidad:** 👤 estrictamente el dueño del token. **No existe** endpoint para que un admin consulte el perfil de otro usuario en esta entrega.
 - **Salida `200`:** `UserProfile`:
   ```json
-  { "id": "1", "name": "Juan Díaz", "role": "Colaborador", "roleType": "user", "initials": "JD", "email": "demo@insumma.co", "area": "Comercial", "phone": "Ext. 305", "color": "#2E7D32", "joinedAt": "2023-02-15", "extension": "305" }
+  { "id": "1", "name": "Juan Díaz", "role": "Colaborador", "roleType": "user", "initials": "JD", "email": "demo@insumma.co", "area": "Comercial", "phone": "Ext. 305", "color": "#2E7D32", "joinedAt": "2023-02-15", "extension": "305", "profileCompleted": true, "missingFields": [] }
   ```
+- **Nota:** accesible aunque el perfil esté incompleto (no pasa por el filtro `428`).
 
 ### PATCH /api/auth/me
-- **Alcance:** edita los datos editables del propio perfil.
+- **Alcance:** edita los datos editables del propio perfil. Es también el endpoint del **onboarding**: cuando quedan llenos `name`, `role`, `area`, `phone` y `joinedAt`, `profileCompleted` pasa a `true` y se levanta el bloqueo `428`.
 - **Visibilidad:** 👤 propio, sin excepción — no hay endpoint de "gestionar usuarios" (editar rol/desactivar terceros) implementado todavía, aunque el contrato original lo contempla para admin.
-- **Entrada (parcial, todos opcionales):** `{ "name"?: string, "area"?: string, "phone"?: string }`. **El `email` no es editable** por esta vía (se ignora si se envía).
-- **Salida `200`:** `UserProfile` actualizado.
+- **Entrada (parcial, todos opcionales):** `{ "name"?: string, "role"?: string, "area"?: string, "phone"?: string, "joinedAt"?: "YYYY-MM-DD", "extension"?: string|null }`. **El `email` no es editable** por esta vía (se ignora si se envía).
+- **Salida `200`:** `UserProfile` actualizado. Las `initials` se recalculan si cambia el nombre, y el participante Súmate se sincroniza con el nuevo nombre/área.
+- **Nota:** accesible aunque el perfil esté incompleto (no pasa por el filtro `428`).
 
 ### POST /api/auth/forgot-password
 - **Alcance:** dispara el flujo de recuperación de contraseña.
@@ -161,6 +202,45 @@ Cada endpoint documenta:
 - **Entrada:** `{ "email": string }`.
 - **Salida `200`:** `{ "success": true }` **siempre**, exista o no la cuenta (evita que un atacante enumere correos válidos).
 - **Nota de implementación:** el envío real del correo aún no está conectado; el endpoint solo valida el formato y responde éxito.
+
+---
+
+## Administración de usuarios (admin)
+
+Todas exigen `role:admin`; un `user` recibe `403`.
+
+### GET /api/users
+- **Alcance:** listado paginado de cuentas.
+- **Filtros (query):** `q` (nombre o correo), `roleType` (`admin`|`user`), `area`, `status` (`active`|`inactive`|`incomplete`), `perPage` (máx. 200, por defecto 25).
+- **Salida `200`:** `{ "data": UserAdmin[], "links": {...}, "meta": {...} }` (paginación estándar de Laravel).
+  ```json
+  { "id": "7", "name": "Camila Altamar", "role": "Auxiliar de Equipos", "roleType": "user",
+    "initials": "CA", "email": "aux.equipos@insumma.co", "area": "Logística", "phone": "3001234567",
+    "color": "#C62828", "joinedAt": "2024-03-01", "extension": "210",
+    "active": true, "profileCompleted": true, "missingFields": [], "sumateParticipantId": 7 }
+  ```
+
+### POST /api/users
+- **Alcance:** alta manual. Para la carga inicial se usa `php artisan users:import`.
+- **Entrada:** `{ "name", "email", "password" (mín. 8), "roleType" }` obligatorios; `role`, `area`, `phone`, `joinedAt`, `extension` opcionales.
+- **Comportamiento:** deriva `initials` y `color`, normaliza el correo a minúsculas y crea el participante de Súmate. Si el perfil queda incompleto, el usuario pasa por el onboarding al entrar.
+- **Salida `201`:** `UserAdmin`.
+- **Errores:** `422` correo duplicado o datos inválidos.
+
+### PATCH /api/users/{user}
+- **Alcance:** edita perfil, `roleType` y `active` (desactivar/reactivar).
+- **Entrada (parcial):** cualquiera de `name`, `email`, `role`, `area`, `phone`, `joinedAt`, `extension`, `roleType`, `active`.
+- **Comportamiento:** recalcula `initials` si cambia el nombre, sincroniza el participante de Súmate, y al desactivar **revoca todos los tokens** del usuario. Completar el perfil desde aquí también levanta el bloqueo `428`.
+- **Guardas (todas `422`):**
+  - Un admin no puede cambiar **su propio** `roleType` ni desactivar **su propia** cuenta.
+  - No se puede degradar ni desactivar al **último administrador activo**.
+- **Salida `200`:** `UserAdmin`.
+
+### POST /api/users/{user}/password
+- **Alcance:** restablece la contraseña de un colaborador que perdió la suya.
+- **Entrada:** `{ "password"?: string }` — si se omite, el servidor genera una de 12 caracteres.
+- **Comportamiento:** cierra todas las sesiones del usuario.
+- **Salida `200`:** `{ "password": "..." }` — **única vez** que la contraseña viaja en claro; solo se persiste el hash.
 
 ---
 
@@ -341,22 +421,53 @@ Cada endpoint documenta:
   ```
 - **Lógica de negocio (recalculada en el servidor, no manipulable por el cliente):**
   - **Puntos por acción:** `min(count, max) * ptsEach`, con tope `maxPts`. **Total = suma de las 5 acciones, cap 100.**
-  - **Elegibilidad:** `eligible = true` **solo si las 5 precondiciones son `true`**. Ejemplos del seed:
-    - *Felipe Castro*: 100 pts pero `puntualidad:false` → `eligible:false`.
-    - *Juan Díaz*: `capacitaciones:false` → `eligible:false` (aunque tenga puntos).
+  - **Elegibilidad:** `eligible = true` **solo si las 5 precondiciones son `true`**.
   - **Nivel:** se asigna por rango de puntos **solo si es elegible**.
 
+### Pre-condiciones automáticas
+
+Dos de las cinco las **deriva el servidor** en cada lectura; nadie las marca a mano:
+
+| Slug | Se calcula desde | `true` cuando | `autoDetail` |
+|---|---|---|---|
+| `antiguedad` | `users.joined_at` | Han pasado más de 3 meses desde el ingreso | `"1a 4m"` · `"Sin fecha de ingreso"` |
+| `capacitaciones` | `course_enrollments` | Están completados **todos** los cursos con `tag = 'Obligatorio'` | `"2/3 cursos"` |
+
+- El catálogo `precondiciones` marca cuáles son con `"auto": true`; la UI las muestra en solo lectura.
+- Cada participante trae `autoDetail` con el porqué del valor, para el tooltip de la matriz de gestión.
+- `PATCH .../precondiciones` responde **`422`** si se intenta escribir una automática:
+  `La pre-condición «Antigüedad» la calcula el sistema y no se puede editar.`
+- Las tres manuales (`puntualidad`, `asistencia`, `disciplinarios`) sí las valida el admin: no hay
+  sistema de reloj ni de sanciones del que derivarlas.
+
+Consecuencia operativa: cuando un colaborador termina sus cursos obligatorios o cumple los 3 meses,
+su elegibilidad se actualiza sola. Corregir una fecha de ingreso desde
+`PATCH /api/users/{user}` recalcula su antigüedad al instante.
+
 ### POST /api/sumate/acciones
-- **Alcance:** registra o retira una unidad de una acción para el participante del usuario autenticado.
-- **Visibilidad:** 👤 solo el participante vinculado al usuario autenticado (via `sumate_participants.user_id`) — no se puede registrar acciones a nombre de otro.
-- **Entrada:** `{ "accionId": "yoAporto", "delta": 1 }` (`delta ∈ {-1, 1}`; `accionId` debe existir en el catálogo).
-- **Lógica de negocio:** el conteo nunca baja de 0 ni supera el `max` de la acción; se recalcula `pts`/`eligible` tras cada cambio.
+- **Alcance:** otorga o retira una unidad de una acción a un participante. **Los puntos los concede Gestión Humana**, no el propio colaborador.
+- **Visibilidad:** **admin**. Un `user` recibe `403`.
+- **Entrada:** `{ "participantId": 10, "accionId": "yoAporto", "delta": 1 }` (`delta ∈ {-1, 1}`; `accionId` debe existir en el catálogo).
+- **Lógica de negocio:** el conteo nunca baja de 0 ni supera el `max` de la acción; se recalcula `pts`/`eligible` tras cada cambio. **No se puede sumar (`delta: 1`) a un participante no elegible.**
 - **Salida `200`:** estado del participante:
   ```json
   { "id": 10, "name": "Juan Díaz", "initials": "JD", "color": "#388E3C", "area": "Comercial",
-    "pre": {...}, "acc": { "yoAporto": 3, ... }, "pts": 60, "eligible": false, "nivel": null }
+    "pre": {...}, "acc": { "yoAporto": 3, ... }, "pts": 60, "eligible": true, "nivel": 4 }
   ```
-- **Errores:** `403` si el usuario autenticado no tiene participante Súmate asociado; `422` si `accionId`/`delta` son inválidos.
+- **Errores:** `403` si no es admin; `422` si `participantId`/`accionId`/`delta` son inválidos o si el participante no cumple las pre-condiciones.
+
+### PATCH /api/sumate/participants/{participant}/precondiciones
+- **Alcance:** valida (o revoca) las pre-condiciones **manuales** de un participante.
+- **Visibilidad:** **admin**. Un `user` recibe `403`.
+- **Entrada:** `{ "pre": { "puntualidad": true, "disciplinarios": false } }` — solo se aplican los slugs enviados; los demás quedan como estaban.
+- **Salida `200`:** el mismo shape del participante que devuelve `POST /api/sumate/acciones`, con `eligible` y `nivel` recalculados.
+- **Errores:** `403` si no es admin; `404` si el participante no existe; `422` si `pre` no es un objeto de booleanos **o si se intenta escribir una pre-condición automática** (ver arriba).
+
+### PUT /api/sumate/config
+- **Alcance:** define el trimestre activo del programa.
+- **Visibilidad:** **admin**.
+- **Entrada:** `{ "trimestre": "Q4 2026", "periodoLabel": "Octubre – Diciembre 2026", "cierreLabel": "31 dic 2026" }`.
+- **Salida `200`:** el mismo objeto. Los demás trimestres quedan marcados como inactivos.
 
 ---
 
