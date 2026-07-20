@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ForumController;
 use App\Http\Controllers\Api\IdeaController;
 use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\SumateController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -26,7 +27,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
     // ── Auth (autenticado) ────────────────────────────────────────
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -34,7 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ── Resto de la app: exige además tener el perfil completo ────────
-Route::middleware(['auth:sanctum', 'profile.completed'])->group(function () {
+Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(function () {
     // ── Entérate: noticias y comunicados ──────────────────────────
     Route::get('/news', [ArticleController::class, 'index'])->defaults('type', 'noticias');
     Route::get('/news/{article}', [ArticleController::class, 'show'])->defaults('type', 'noticias');
@@ -74,6 +75,12 @@ Route::middleware(['auth:sanctum', 'profile.completed'])->group(function () {
 
     // ── Gestión de contenido / catálogos (admin) ──────────────────
     Route::middleware('role:admin')->group(function () {
+        // Administración de usuarios
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::patch('/users/{user}', [UserController::class, 'update']);
+        Route::post('/users/{user}/password', [UserController::class, 'resetPassword']);
+
         // Entérate
         Route::post('/news', [ArticleController::class, 'store'])->defaults('type', 'noticias');
         Route::put('/news/{article}', [ArticleController::class, 'update']);

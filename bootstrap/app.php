@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureActive;
 use App\Http\Middleware\EnsureProfileCompleted;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => EnsureRole::class,
+            'active' => EnsureActive::class,
             'profile.completed' => EnsureProfileCompleted::class,
         ]);
     })

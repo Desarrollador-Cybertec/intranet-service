@@ -27,6 +27,12 @@ class AuthController extends Controller
             return response()->json(['message' => 'Correo o contraseña incorrectos.'], 401);
         }
 
+        if (! $user->active) {
+            return response()->json([
+                'message' => 'Tu cuenta está desactivada. Comunícate con Gestión Humana.',
+            ], 403);
+        }
+
         $token = $user->createToken('intranet')->plainTextToken;
 
         return response()->json([
