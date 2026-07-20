@@ -2,12 +2,17 @@
 
 namespace App\Services;
 
+use App\Exceptions\AutoPreconditionException;
 use App\Exceptions\NotEligibleException;
+use App\Models\Course;
+use App\Models\CourseEnrollment;
 use App\Models\SumateAccion;
 use App\Models\SumateNivel;
 use App\Models\SumateParticipant;
 use App\Models\SumatePrecondicion;
 use App\Models\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -17,6 +22,9 @@ use Illuminate\Support\Facades\DB;
 class SumateService
 {
     public const MAX_TOTAL = 100;
+
+    /** @var Collection<int,SumatePrecondicion>|null */
+    private $precondiciones = null;
 
     /**
      * Puntos totales de un participante.
@@ -40,25 +48,109 @@ class SumateService
     }
 
     /**
-     * Elegible solo si las 5 precondiciones son true.
+     * Precarga en 3 consultas lo que necesitan las pre-condiciones automáticas,
+     * para no hacer N+1 al resolver los ~125 participantes de un trimestre.
+     *
+     * @return array{joinedAt: array<int,mixed>, obligatorios: int, completados: array<int,int>}
      */
-    public function isEligible(SumateParticipant $participant): bool
+    public function autoContext(): array
     {
-        $participant->loadMissing('preconditionStatuses');
+        $obligatorioIds = Course::where('tag', 'Obligatorio')->pluck('id');
 
-        if ($participant->preconditionStatuses->isEmpty()) {
+        $completados = $obligatorioIds->isEmpty()
+            ? collect()
+            : CourseEnrollment::where('completed', true)
+                ->whereIn('course_id', $obligatorioIds)
+                ->selectRaw('user_id, COUNT(*) as total')
+                ->groupBy('user_id')
+                ->pluck('total', 'user_id');
+
+        return [
+            'joinedAt' => User::whereNotNull('joined_at')->pluck('joined_at', 'id')->all(),
+            'obligatorios' => $obligatorioIds->count(),
+            'completados' => $completados->all(),
+        ];
+    }
+
+    /**
+     * Valor derivado de una pre-condición automática, con el detalle que la UI
+     * muestra como tooltip ("1a 4m", "3/5 cursos").
+     *
+     * @param  array{joinedAt: array<int,mixed>, obligatorios: int, completados: array<int,int>}  $ctx
+     * @return array{value: bool, detail: string}
+     */
+    public function autoValueFor(SumateParticipant $participant, string $source, array $ctx): array
+    {
+        $userId = $participant->user_id;
+
+        return match ($source) {
+            'antiguedad' => $this->antiguedadFor($userId, $ctx),
+            'capacitaciones' => $this->capacitacionesFor($userId, $ctx),
+            default => ['value' => false, 'detail' => 'Sin fuente'],
+        };
+    }
+
+    /**
+     * Estado real de las 5 pre-condiciones: las automáticas se calculan aquí y
+     * las manuales se leen de sumate_precondition_statuses.
+     *
+     * @param  array{joinedAt: array<int,mixed>, obligatorios: int, completados: array<int,int>}|null  $ctx
+     * @return array{pre: array<string,bool>, autoDetail: array<string,string>}
+     */
+    public function preconditionsFor(SumateParticipant $participant, ?array $ctx = null): array
+    {
+        $ctx ??= $this->autoContext();
+        $participant->loadMissing('preconditionStatuses.precondicion');
+
+        $stored = [];
+        foreach ($participant->preconditionStatuses as $ps) {
+            if ($ps->precondicion) {
+                $stored[$ps->precondicion->slug] = (bool) $ps->value;
+            }
+        }
+
+        $pre = [];
+        $autoDetail = [];
+
+        foreach ($this->precondiciones() as $precondicion) {
+            if ($precondicion->auto_source) {
+                $auto = $this->autoValueFor($participant, $precondicion->auto_source, $ctx);
+                $pre[$precondicion->slug] = $auto['value'];
+                $autoDetail[$precondicion->slug] = $auto['detail'];
+
+                continue;
+            }
+
+            $pre[$precondicion->slug] = $stored[$precondicion->slug] ?? false;
+        }
+
+        return ['pre' => $pre, 'autoDetail' => $autoDetail];
+    }
+
+    /**
+     * Elegible solo si las 5 precondiciones (automáticas + manuales) son true.
+     *
+     * @param  array{joinedAt: array<int,mixed>, obligatorios: int, completados: array<int,int>}|null  $ctx
+     */
+    public function isEligible(SumateParticipant $participant, ?array $ctx = null): bool
+    {
+        $pre = $this->preconditionsFor($participant, $ctx)['pre'];
+
+        if ($pre === []) {
             return false;
         }
 
-        return $participant->preconditionStatuses->every(fn ($s) => $s->value === true);
+        return ! in_array(false, $pre, true);
     }
 
     /**
      * Nivel alcanzado según puntos, solo si es elegible. null si no aplica.
+     *
+     * @param  array{joinedAt: array<int,mixed>, obligatorios: int, completados: array<int,int>}|null  $ctx
      */
-    public function levelFor(SumateParticipant $participant): ?SumateNivel
+    public function levelFor(SumateParticipant $participant, ?array $ctx = null): ?SumateNivel
     {
-        if (! $this->isEligible($participant)) {
+        if (! $this->isEligible($participant, $ctx)) {
             return null;
         }
 
@@ -67,6 +159,58 @@ class SumateService
         return SumateNivel::where('min', '<=', $points)
             ->where('max', '>=', $points)
             ->first();
+    }
+
+    /**
+     * Catálogo de pre-condiciones, cacheado por request.
+     *
+     * @return Collection<int,SumatePrecondicion>
+     */
+    public function precondiciones()
+    {
+        return $this->precondiciones ??= SumatePrecondicion::orderBy('position')->orderBy('id')->get();
+    }
+
+    /**
+     * Antigüedad: más de 3 meses desde la fecha de ingreso del usuario.
+     *
+     * @param  array{joinedAt: array<int,mixed>, obligatorios: int, completados: array<int,int>}  $ctx
+     * @return array{value: bool, detail: string}
+     */
+    private function antiguedadFor(?int $userId, array $ctx): array
+    {
+        $joinedAt = $userId === null ? null : ($ctx['joinedAt'][$userId] ?? null);
+
+        if ($joinedAt === null) {
+            return ['value' => false, 'detail' => 'Sin fecha de ingreso'];
+        }
+
+        $joined = Carbon::parse($joinedAt);
+        $months = (int) $joined->diffInMonths(now());
+        $detail = $months >= 12
+            ? intdiv($months, 12).'a '.($months % 12).'m'
+            : $months.'m';
+
+        return ['value' => $joined->lte(now()->subMonths(3)), 'detail' => $detail];
+    }
+
+    /**
+     * Capacitaciones: el 100 % de los cursos obligatorios completados.
+     *
+     * @param  array{joinedAt: array<int,mixed>, obligatorios: int, completados: array<int,int>}  $ctx
+     * @return array{value: bool, detail: string}
+     */
+    private function capacitacionesFor(?int $userId, array $ctx): array
+    {
+        $total = $ctx['obligatorios'];
+
+        if ($total === 0) {
+            return ['value' => true, 'detail' => 'Sin obligatorios'];
+        }
+
+        $done = $userId === null ? 0 : ($ctx['completados'][$userId] ?? 0);
+
+        return ['value' => $done >= $total, 'detail' => "{$done}/{$total} cursos"];
     }
 
     /**
@@ -85,10 +229,10 @@ class SumateService
             ],
         );
 
-        // Todo participante arranca con las precondiciones en false; el admin las valida.
-        foreach (SumatePrecondicion::pluck('id') as $precondicionId) {
+        // Las manuales arrancan en false; el admin las valida. Las automáticas se calculan.
+        foreach ($this->precondiciones()->whereNull('auto_source') as $precondicion) {
             $participant->preconditionStatuses()->firstOrCreate(
-                ['precondicion_id' => $precondicionId],
+                ['precondicion_id' => $precondicion->id],
                 ['value' => false],
             );
         }
@@ -97,22 +241,33 @@ class SumateService
     }
 
     /**
-     * Marca las precondiciones de un participante. Solo aplica los slugs recibidos.
+     * Marca las precondiciones manuales de un participante.
+     * Las automáticas (auto_source) son derivadas y no se pueden escribir.
      *
      * @param  array<string,bool>  $pre
+     *
+     * @throws AutoPreconditionException si se intenta escribir una automática.
      */
     public function setPreconditions(SumateParticipant $participant, array $pre): SumateParticipant
     {
-        $ids = SumatePrecondicion::pluck('id', 'slug');
+        $catalogo = $this->precondiciones()->keyBy('slug');
 
-        DB::transaction(function () use ($participant, $pre, $ids) {
+        foreach (array_keys($pre) as $slug) {
+            if (($catalogo[$slug] ?? null)?->auto_source) {
+                throw new AutoPreconditionException(
+                    "La pre-condición «{$catalogo[$slug]->label}» la calcula el sistema y no se puede editar."
+                );
+            }
+        }
+
+        DB::transaction(function () use ($participant, $pre, $catalogo) {
             foreach ($pre as $slug => $value) {
-                if (! isset($ids[$slug])) {
+                if (! isset($catalogo[$slug])) {
                     continue;
                 }
 
                 $participant->preconditionStatuses()->updateOrCreate(
-                    ['precondicion_id' => $ids[$slug]],
+                    ['precondicion_id' => $catalogo[$slug]->id],
                     ['value' => (bool) $value],
                 );
             }
@@ -159,8 +314,9 @@ class SumateService
      *
      * @return array<string,mixed>
      */
-    public function summary(SumateParticipant $participant): array
+    public function summary(SumateParticipant $participant, ?array $ctx = null): array
     {
+        $ctx ??= $this->autoContext();
         $participant->loadMissing(['actionCounts.accion', 'preconditionStatuses.precondicion']);
 
         $acc = [];
@@ -170,25 +326,21 @@ class SumateService
             }
         }
 
-        $pre = [];
-        foreach ($participant->preconditionStatuses as $ps) {
-            if ($ps->precondicion) {
-                $pre[$ps->precondicion->slug] = $ps->value;
-            }
-        }
-
-        $level = $this->levelFor($participant);
+        ['pre' => $pre, 'autoDetail' => $autoDetail] = $this->preconditionsFor($participant, $ctx);
+        $level = $this->levelFor($participant, $ctx);
 
         return [
             'id' => $participant->id,
+            'userId' => $participant->user_id,
             'name' => $participant->name,
             'initials' => $participant->initials,
             'color' => $participant->color,
             'area' => $participant->area,
             'pre' => $pre,
+            'autoDetail' => $autoDetail,
             'acc' => $acc,
             'pts' => $this->pointsFor($participant),
-            'eligible' => $this->isEligible($participant),
+            'eligible' => $this->isEligible($participant, $ctx),
             'nivel' => $level?->nivel,
         ];
     }

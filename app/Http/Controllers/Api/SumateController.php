@@ -8,7 +8,6 @@ use App\Models\SumateAccion;
 use App\Models\SumateConfig;
 use App\Models\SumateNivel;
 use App\Models\SumateParticipant;
-use App\Models\SumatePrecondicion;
 use App\Services\SumateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,21 +24,26 @@ class SumateController extends Controller
         $config = SumateConfig::active();
         $me = $request->user()->sumateParticipant;
 
+        // Contexto compartido: evita recalcular antigüedad/capacitaciones por participante.
+        $ctx = $this->sumate->autoContext();
+
         $participantes = SumateParticipant::with(['actionCounts.accion', 'preconditionStatuses.precondicion'])
             ->get()
-            ->map(fn (SumateParticipant $p) => $this->participantShape($p))
+            ->map(fn (SumateParticipant $p) => $this->sumate->summary($p, $ctx))
             ->all();
 
         return response()->json([
             'trimestre' => $config?->trimestre,
             'periodoLabel' => $config?->periodo_label,
             'cierreLabel' => $config?->cierre_label,
-            'precondiciones' => SumatePrecondicion::orderBy('position')->orderBy('id')->get()
+            'precondiciones' => $this->sumate->precondiciones()
                 ->map(fn ($p) => [
                     'id' => $p->slug,
                     'label' => $p->label,
                     'req' => $p->req,
                     'desc' => $p->desc,
+                    // auto → la calcula el servidor; el admin la ve en solo lectura.
+                    'auto' => $p->auto_source !== null,
                 ]),
             'acciones' => SumateAccion::orderBy('position')->orderBy('id')->get()
                 ->map(fn ($a) => [
@@ -125,38 +129,5 @@ class SumateController extends Controller
             'periodoLabel' => $config->periodo_label,
             'cierreLabel' => $config->cierre_label,
         ]);
-    }
-
-    /**
-     * @return array<string,mixed>
-     */
-    private function participantShape(SumateParticipant $p): array
-    {
-        $pre = [];
-        foreach ($p->preconditionStatuses as $ps) {
-            if ($ps->precondicion) {
-                $pre[$ps->precondicion->slug] = $ps->value;
-            }
-        }
-
-        $acc = [];
-        foreach ($p->actionCounts as $ac) {
-            if ($ac->accion) {
-                $acc[$ac->accion->slug] = $ac->count;
-            }
-        }
-
-        return [
-            'id' => $p->id,
-            'userId' => $p->user_id,
-            'name' => $p->name,
-            'initials' => $p->initials,
-            'color' => $p->color,
-            'area' => $p->area,
-            'pre' => $pre,
-            'acc' => $acc,
-            'pts' => $this->sumate->pointsFor($p),
-            'eligible' => $this->sumate->isEligible($p),
-        ];
     }
 }
