@@ -30,7 +30,9 @@ class StoreUserRequest extends FormRequest
             'area' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
             'joinedAt' => ['nullable', 'date'],
+            'birthday' => ['nullable', 'date'],
             'extension' => ['nullable', 'string', 'max:255'],
+            'photo' => ['nullable', 'string', 'max:2048'],
         ];
     }
 

@@ -29,6 +29,7 @@ class StoreArticleRequest extends FormRequest
             'title' => [$required, 'string', 'max:255'],
             'excerpt' => [$required, 'string'],
             'date' => [$required, 'string', 'max:255'],
+            'eventDate' => ['sometimes', 'nullable', 'date'],
             'author' => [$required, 'string', 'max:255'],
             'imgs' => ['sometimes', 'array'],
             'imgs.*' => ['string'],
@@ -51,6 +52,10 @@ class StoreArticleRequest extends FormRequest
         if (array_key_exists('tagColor', $data)) {
             $data['tag_color'] = $data['tagColor'];
             unset($data['tagColor']);
+        }
+        if (array_key_exists('eventDate', $data)) {
+            $data['event_date'] = $data['eventDate'];
+            unset($data['eventDate']);
         }
 
         return $data;

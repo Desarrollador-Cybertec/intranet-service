@@ -78,6 +78,10 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'role_type' => 'admin',
             'role' => 'Administrador',
+            // Los administradores del sistema pertenecen al dominio gestor: solo ellos
+            // pueden cambiar roles (ver User::canManageRoles). Sobrescribe el email si
+            // necesitas un admin de otro dominio (p. ej. un @insumma.co promovido).
+            'email' => fake()->unique()->userName().'@'.User::ROLE_MANAGER_DOMAIN,
         ]);
     }
 }

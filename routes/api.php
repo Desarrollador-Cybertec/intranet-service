@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\CapacitacionController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DirectoryController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\ForumController;
@@ -36,6 +37,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
 // ── Resto de la app: exige además tener el perfil completo ────────
 Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(function () {
+    // ── Dashboard (home): KPIs, cumpleaños y notificaciones ───────
+    Route::get('/dashboard', [DashboardController::class, 'summary']);
+    Route::get('/dashboard/notifications', [DashboardController::class, 'notifications']);
+
     // ── Entérate: noticias y comunicados ──────────────────────────
     Route::get('/news', [ArticleController::class, 'index'])->defaults('type', 'noticias');
     Route::get('/news/{article}', [ArticleController::class, 'show'])->defaults('type', 'noticias');
@@ -97,11 +102,6 @@ Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(functi
         Route::post('/events', [ArticleController::class, 'store'])->defaults('type', 'eventos');
         Route::put('/events/{article}', [ArticleController::class, 'update']);
         Route::delete('/events/{article}', [ArticleController::class, 'destroy']);
-
-        // Directorio
-        Route::post('/directory', [DirectoryController::class, 'store']);
-        Route::put('/directory/{directoryPerson}', [DirectoryController::class, 'update']);
-        Route::delete('/directory/{directoryPerson}', [DirectoryController::class, 'destroy']);
 
         // Súmate: el admin otorga acciones y valida pre-condiciones
         Route::post('/sumate/acciones', [SumateController::class, 'registerAction']);

@@ -21,6 +21,7 @@ class ArticleResource extends JsonResource
             'title' => $this->title,
             'excerpt' => $this->excerpt,
             'date' => $this->date,
+            'eventDate' => $this->event_date?->format('Y-m-d'),
             'author' => $this->author,
             'imgs' => $this->imgs,
             'body' => $this->body,

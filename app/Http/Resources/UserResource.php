@@ -25,6 +25,7 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'profileCompleted' => $this->isProfileComplete(),
             'missingFields' => $this->missingProfileFields(),
+            'canManageRoles' => $this->canManageRoles(),
         ];
     }
 }

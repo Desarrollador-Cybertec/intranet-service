@@ -87,6 +87,19 @@ class UserAdminTest extends TestCase
         $this->assertNotNull(SumateParticipant::where('user_id', $user->id)->first());
     }
 
+    public function test_stores_and_returns_the_birthday(): void
+    {
+        $this->actingAs($this->admin())->postJson('/api/users', [
+            'name' => 'Camila Altamar',
+            'email' => 'camila@insumma.co',
+            'password' => 'Insumma2026!',
+            'roleType' => 'user',
+            'birthday' => '1994-05-12',
+        ])->assertCreated()->assertJsonPath('birthday', '1994-05-12');
+
+        $this->assertSame('1994-05-12', User::where('email', 'camila@insumma.co')->first()->birthday->format('Y-m-d'));
+    }
+
     public function test_creating_with_a_full_profile_skips_the_onboarding(): void
     {
         $this->actingAs($this->admin())->postJson('/api/users', [
@@ -147,6 +160,67 @@ class UserAdminTest extends TestCase
 
         // Y ahora puede administrar.
         $this->actingAs($user->fresh())->getJson('/api/users')->assertOk();
+    }
+
+    // ── Gestión de roles: solo el dominio gestor (@cybertec.com.co) ──────────
+
+    public function test_a_non_cybertec_admin_cannot_change_roles(): void
+    {
+        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+        $user = User::factory()->create();
+
+        $this->actingAs($insummaAdmin)->patchJson("/api/users/{$user->id}", ['roleType' => 'admin'])
+            ->assertStatus(403)
+            ->assertJsonPath('message', 'Solo los administradores con correo @cybertec.com.co pueden cambiar roles.');
+
+        $this->assertSame('user', $user->fresh()->role_type);
+    }
+
+    public function test_a_non_cybertec_admin_cannot_create_admins(): void
+    {
+        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+
+        $this->actingAs($insummaAdmin)->postJson('/api/users', [
+            'name' => 'Nuevo Admin',
+            'email' => 'nuevo@insumma.co',
+            'password' => 'Insumma2026!',
+            'roleType' => 'admin',
+        ])->assertStatus(403)
+            ->assertJsonPath('message', 'Solo los administradores con correo @cybertec.com.co pueden crear administradores.');
+
+        $this->assertDatabaseMissing('users', ['email' => 'nuevo@insumma.co']);
+    }
+
+    public function test_a_non_cybertec_admin_can_still_create_regular_users(): void
+    {
+        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+
+        $this->actingAs($insummaAdmin)->postJson('/api/users', [
+            'name' => 'Colaborador Nuevo',
+            'email' => 'colab@insumma.co',
+            'password' => 'Insumma2026!',
+            'roleType' => 'user',
+        ])->assertCreated()->assertJsonPath('roleType', 'user');
+    }
+
+    public function test_a_non_cybertec_admin_can_still_edit_profiles_without_touching_the_role(): void
+    {
+        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+        $user = User::factory()->create(['name' => 'Camila Altamar']);
+
+        $this->actingAs($insummaAdmin)->patchJson("/api/users/{$user->id}", ['area' => 'Logística'])
+            ->assertOk()->assertJsonPath('area', 'Logística');
+    }
+
+    public function test_me_exposes_can_manage_roles_per_domain(): void
+    {
+        $cybertecAdmin = User::factory()->admin()->create();
+        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+        $user = User::factory()->create();
+
+        $this->actingAs($cybertecAdmin)->getJson('/api/auth/me')->assertJsonPath('canManageRoles', true);
+        $this->actingAs($insummaAdmin)->getJson('/api/auth/me')->assertJsonPath('canManageRoles', false);
+        $this->actingAs($user)->getJson('/api/auth/me')->assertJsonPath('canManageRoles', false);
     }
 
     // ── Guardas ──────────────────────────────────────────────────────────────

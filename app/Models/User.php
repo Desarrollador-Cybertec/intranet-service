@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role', 'role_type', 'initials', 'area', 'phone', 'color', 'joined_at', 'extension', 'profile_completed_at', 'active'])]
+#[Fillable(['name', 'email', 'password', 'role', 'role_type', 'initials', 'area', 'phone', 'color', 'joined_at', 'birthday', 'extension', 'photo', 'profile_completed_at', 'active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -30,6 +30,12 @@ class User extends Authenticatable
 
     /** Paleta usada en los seeders y en los avatares del front. */
     private const COLORS = ['#2E7D32', '#1565C0', '#F57C00', '#C62828', '#6A1B9A'];
+
+    /**
+     * Dominio cuyos administradores pueden gestionar roles (asignar/retirar admin).
+     * El resto de administradores gestiona contenido y perfiles, pero no roles.
+     */
+    public const ROLE_MANAGER_DOMAIN = 'cybertec.com.co';
 
     /**
      * Sin esto, un usuario recién creado tiene `active` en null hasta releerlo de
@@ -52,6 +58,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'joined_at' => 'date',
+            'birthday' => 'date',
             'profile_completed_at' => 'datetime',
             'active' => 'boolean',
         ];
@@ -60,6 +67,16 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role_type === 'admin';
+    }
+
+    /**
+     * Solo los administradores con correo del dominio gestor pueden cambiar roles
+     * (promover/retirar administradores). Ver UserController::guardRoleChange.
+     */
+    public function canManageRoles(): bool
+    {
+        return $this->isAdmin()
+            && Str::endsWith(Str::lower((string) $this->email), '@'.self::ROLE_MANAGER_DOMAIN);
     }
 
     /**

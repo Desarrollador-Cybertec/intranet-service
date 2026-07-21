@@ -25,7 +25,9 @@ class UpdateProfileRequest extends FormRequest
             'area' => ['sometimes', 'string', 'max:255'],
             'phone' => ['sometimes', 'string', 'max:255'],
             'joinedAt' => ['sometimes', 'date'],
+            'birthday' => ['sometimes', 'nullable', 'date'],
             'extension' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'photo' => ['sometimes', 'nullable', 'string', 'max:2048'],
         ];
     }
 

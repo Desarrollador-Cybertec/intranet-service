@@ -58,6 +58,11 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
+        // Crear un administrador es asignar un rol: reservado al dominio gestor.
+        if ($data['roleType'] === 'admin' && ! $request->user()->canManageRoles()) {
+            abort(403, 'Solo los administradores con correo @'.User::ROLE_MANAGER_DOMAIN.' pueden crear administradores.');
+        }
+
         $user = User::create([
             'name' => $data['name'],
             'email' => Str::lower($data['email']),
@@ -67,7 +72,9 @@ class UserController extends Controller
             'area' => $data['area'] ?? null,
             'phone' => $data['phone'] ?? null,
             'joined_at' => $data['joinedAt'] ?? null,
+            'birthday' => $data['birthday'] ?? null,
             'extension' => $data['extension'] ?? null,
+            'photo' => $data['photo'] ?? null,
             'initials' => User::initialsFrom($data['name']),
             'color' => User::colorFrom($data['email']),
         ]);
@@ -154,6 +161,10 @@ class UserController extends Controller
     {
         if (! array_key_exists('roleType', $data) || $data['roleType'] === $user->role_type) {
             return;
+        }
+
+        if (! $self->canManageRoles()) {
+            abort(403, 'Solo los administradores con correo @'.User::ROLE_MANAGER_DOMAIN.' pueden cambiar roles.');
         }
 
         if ($user->is($self)) {

@@ -10,6 +10,7 @@ class Article extends Model
 
     protected $casts = [
         'imgs' => 'array',
+        'event_date' => 'date',
     ];
 
     public function scopeType($query, string $type)

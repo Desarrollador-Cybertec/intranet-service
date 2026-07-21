@@ -31,7 +31,9 @@ class UpdateUserRequest extends FormRequest
             'area' => ['sometimes', 'nullable', 'string', 'max:255'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:255'],
             'joinedAt' => ['sometimes', 'nullable', 'date'],
+            'birthday' => ['sometimes', 'nullable', 'date'],
             'extension' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'photo' => ['sometimes', 'nullable', 'string', 'max:2048'],
         ];
     }
 
