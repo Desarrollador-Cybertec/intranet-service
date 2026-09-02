@@ -29,7 +29,8 @@ use Illuminate\Support\Facades\Route;
 // ── Auth (público) ────────────────────────────────────────────────
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:6,1');
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:6,1');
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     // ── Auth (autenticado) ────────────────────────────────────────
@@ -78,7 +79,15 @@ Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(functi
     });
 
     // ── Directorio ────────────────────────────────────────────────
-    Route::get('/directory', [DirectoryController::class, 'index'])->middleware('perm:directorio');
+    Route::middleware('perm:directorio')->group(function () {
+        Route::get('/directory', [DirectoryController::class, 'index']);
+        Route::get('/directory/entries', [DirectoryController::class, 'entries']);
+        Route::patch('/directory/entries/reorder', [DirectoryController::class, 'reorder'])->middleware('perm:directorio,editar');
+        Route::post('/directory/entries/import', [DirectoryController::class, 'import'])->middleware('perm:directorio,crear');
+        Route::post('/directory/entries', [DirectoryController::class, 'store'])->middleware('perm:directorio,crear');
+        Route::patch('/directory/entries/{directoryPerson}', [DirectoryController::class, 'update'])->middleware('perm:directorio,editar');
+        Route::delete('/directory/entries/{directoryPerson}', [DirectoryController::class, 'destroy'])->middleware('perm:directorio,eliminar');
+    });
 
     // ── Súmate (lectura para quien tenga sumate.ver) ───────────────
     Route::get('/sumate/participants', [SumateController::class, 'participants'])->middleware('perm:sumate');
