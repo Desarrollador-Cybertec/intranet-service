@@ -25,6 +25,8 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'max:255'],
             'roleType' => ['required', 'in:admin,user'],
+            'roleSlugs' => ['sometimes', 'array'],
+            'roleSlugs.*' => ['string', 'exists:roles,slug'],
             // El resto del perfil es opcional: si falta, el usuario lo completa al entrar.
             'role' => ['nullable', 'string', 'max:255'],
             'area' => ['nullable', 'string', 'max:255'],

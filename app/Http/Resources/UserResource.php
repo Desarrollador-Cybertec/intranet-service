@@ -26,6 +26,9 @@ class UserResource extends JsonResource
             'profileCompleted' => $this->isProfileComplete(),
             'missingFields' => $this->missingProfileFields(),
             'canManageRoles' => $this->canManageRoles(),
+            'roles' => $this->roles->pluck('slug'),
+            'permissions' => $this->permissions(),
+            'isSuperadmin' => $this->isSuperadmin(),
         ];
     }
 }

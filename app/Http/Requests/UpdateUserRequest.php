@@ -26,6 +26,8 @@ class UpdateUserRequest extends FormRequest
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
             'roleType' => ['sometimes', 'in:admin,user'],
+            'roleSlugs' => ['sometimes', 'array'],
+            'roleSlugs.*' => ['string', 'exists:roles,slug'],
             'active' => ['sometimes', 'boolean'],
             'role' => ['sometimes', 'nullable', 'string', 'max:255'],
             'area' => ['sometimes', 'nullable', 'string', 'max:255'],

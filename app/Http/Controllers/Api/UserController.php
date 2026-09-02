@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\SyncUserRolesRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserAdminResource;
+use App\Models\Role;
 use App\Models\User;
+use App\Services\RoleGuardService;
 use App\Services\SumateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +22,10 @@ use Illuminate\Support\Str;
  */
 class UserController extends Controller
 {
-    public function __construct(private readonly SumateService $sumate) {}
+    public function __construct(
+        private readonly SumateService $sumate,
+        private readonly RoleGuardService $roleGuard,
+    ) {}
 
     /**
      * GET /api/users · admin — listado paginado con filtros.
@@ -30,17 +36,21 @@ class UserController extends Controller
         $data = $request->validate([
             'q' => ['sometimes', 'nullable', 'string', 'max:255'],
             'roleType' => ['sometimes', 'nullable', 'in:admin,user'],
+            'roleSlug' => ['sometimes', 'nullable', 'string', 'exists:roles,slug'],
             'area' => ['sometimes', 'nullable', 'string', 'max:255'],
             'status' => ['sometimes', 'nullable', 'in:active,inactive,incomplete'],
             'perPage' => ['sometimes', 'integer', 'min:1', 'max:200'],
         ]);
 
         $users = User::query()
-            ->with('sumateParticipant')
+            ->with(['sumateParticipant', 'roles'])
             ->when($data['q'] ?? null, fn ($query, $q) => $query->where(
                 fn ($sub) => $sub->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%"),
             ))
             ->when($data['roleType'] ?? null, fn ($query, $role) => $query->where('role_type', $role))
+            ->when($data['roleSlug'] ?? null, fn ($query, $slug) => $query->whereHas(
+                'roles', fn ($r) => $r->where('slug', $slug),
+            ))
             ->when($data['area'] ?? null, fn ($query, $area) => $query->where('area', $area))
             ->when($data['status'] ?? null, fn ($query, $status) => match ($status) {
                 'active' => $query->where('active', true),
@@ -60,7 +70,7 @@ class UserController extends Controller
 
         // Crear un administrador es asignar un rol: reservado al dominio gestor.
         if ($data['roleType'] === 'admin' && ! $request->user()->canManageRoles()) {
-            abort(403, 'Solo los administradores con correo @'.User::ROLE_MANAGER_DOMAIN.' pueden crear administradores.');
+            abort(403, 'No tienes permiso para crear administradores.');
         }
 
         $user = User::create([
@@ -83,9 +93,13 @@ class UserController extends Controller
             $user->forceFill(['profile_completed_at' => now()])->save();
         }
 
+        if (! empty($data['roleSlugs'])) {
+            $this->syncRoles($user, $data['roleSlugs']);
+        }
+
         $this->sumate->syncParticipantFor($user);
 
-        return (new UserAdminResource($user->load('sumateParticipant')))
+        return (new UserAdminResource($user->load(['sumateParticipant', 'roles'])))
             ->response()
             ->setStatusCode(201);
     }
@@ -98,6 +112,9 @@ class UserController extends Controller
 
         $this->guardRoleChange($data, $user, $self);
         $this->guardDeactivation($data, $user, $self);
+
+        $roleSlugs = $data['roleSlugs'] ?? null;
+        unset($data['roleSlugs']);
 
         if (array_key_exists('joinedAt', $data)) {
             $data['joined_at'] = $data['joinedAt'];
@@ -131,9 +148,21 @@ class UserController extends Controller
             $user->tokens()->delete();
         }
 
+        if ($roleSlugs !== null) {
+            $this->syncRoles($user, $roleSlugs);
+        }
+
         $this->sumate->syncParticipantFor($user);
 
-        return new UserAdminResource($user->load('sumateParticipant'));
+        return new UserAdminResource($user->load(['sumateParticipant', 'roles']));
+    }
+
+    /** PUT /api/users/{user}/roles · admin — reemplaza el conjunto de roles del usuario. */
+    public function setRoles(SyncUserRolesRequest $request, User $user): UserAdminResource
+    {
+        $this->syncRoles($user, $request->validated('roleSlugs'));
+
+        return new UserAdminResource($user->load(['sumateParticipant', 'roles']));
     }
 
     /** POST /api/users/{user}/password · admin — restablece la contraseña. */
@@ -164,7 +193,7 @@ class UserController extends Controller
         }
 
         if (! $self->canManageRoles()) {
-            abort(403, 'Solo los administradores con correo @'.User::ROLE_MANAGER_DOMAIN.' pueden cambiar roles.');
+            abort(403, 'No tienes permiso para cambiar roles.');
         }
 
         if ($user->is($self)) {
@@ -194,6 +223,11 @@ class UserController extends Controller
         if ($this->isLastActiveAdmin($user)) {
             abort(422, 'Es el último administrador activo: asigna otro antes de desactivarlo.');
         }
+
+        // Además del flag legado role_type, cubre a quien administra por un rol RBAC.
+        if ($this->roleGuard->wouldOrphanByDeactivating($user)) {
+            abort(422, 'Debe quedar al menos un usuario activo que pueda administrar roles y permisos.');
+        }
     }
 
     private function isLastActiveAdmin(User $user): bool
@@ -206,5 +240,23 @@ class UserController extends Controller
             ->where('active', true)
             ->whereKeyNot($user->getKey())
             ->doesntExist();
+    }
+
+    /**
+     * @param  list<string>  $slugs
+     */
+    private function syncRoles(User $user, array $slugs): void
+    {
+        if (in_array(Role::DEFAULT, $slugs, true)) {
+            abort(422, 'El rol Cualquiera aplica a todos los usuarios automáticamente.');
+        }
+
+        $roleIds = Role::whereIn('slug', $slugs)->pluck('id');
+
+        if ($this->roleGuard->wouldOrphanBySyncingUserRoles($user, $roleIds->all())) {
+            abort(422, 'Debe quedar al menos un usuario activo que pueda administrar roles y permisos.');
+        }
+
+        $user->roles()->sync($roleIds);
     }
 }

@@ -37,6 +37,12 @@ class UserAdminResource extends JsonResource
                 'sumateParticipant',
                 fn () => $this->sumateParticipant?->id,
             ),
+            'roles' => $this->roles->map(fn ($r) => [
+                'id' => (string) $r->id,
+                'slug' => $r->slug,
+                'name' => $r->name,
+            ]),
+            'isSuperadmin' => $this->isSuperadmin(),
         ];
     }
 }
