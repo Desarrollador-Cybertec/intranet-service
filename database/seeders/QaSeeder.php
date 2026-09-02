@@ -89,12 +89,19 @@ class QaSeeder extends Seeder
             'profileCompleted' => false,
         ]);
 
-        // Cuenta desactivada — hoy simula "desactivada por un admin"; en la fase de
-        // registro/activación pasa a representar además el caso "pendiente de activación".
+        // Desactivada POR UN ADMIN (ya había estado activa): activated_at con fecha.
         $this->user([
             'name' => 'Usuario Pendiente', 'email' => 'pendiente@insumma.co', 'role_type' => 'user',
             'role' => 'Analista', 'area' => 'Comercial', 'phone' => '3000000099',
-            'joined_at' => $today, 'active' => false,
+            'joined_at' => $today, 'active' => false, 'activated_at' => $today->copy()->subMonths(2),
+        ]);
+
+        // Recién registrada, NUNCA activada (activated_at=null): distingue el mensaje de
+        // login "pendiente de activación" del de "cuenta desactivada" de arriba.
+        $this->user([
+            'name' => 'Usuario Registro Pendiente', 'email' => 'pendiente.activacion@insumma.co', 'role_type' => 'user',
+            'role' => 'Analista', 'area' => 'Comercial', 'phone' => '3000000098',
+            'joined_at' => $today, 'active' => false, 'activated_at' => null,
         ]);
 
         $this->seedEvents($today);
@@ -117,6 +124,7 @@ class QaSeeder extends Seeder
             'initials' => User::initialsFrom($name),
             'color' => User::colorFrom($email),
             'active' => true,
+            'activated_at' => now(),
             'profile_completed_at' => $profileCompleted ? now() : null,
         ];
 

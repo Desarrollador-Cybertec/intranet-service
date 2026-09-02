@@ -9,6 +9,8 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserAdminResource;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\AccountActivatedNotification;
+use App\Services\DirectoryService;
 use App\Services\RoleGuardService;
 use App\Services\SumateService;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +27,7 @@ class UserController extends Controller
     public function __construct(
         private readonly SumateService $sumate,
         private readonly RoleGuardService $roleGuard,
+        private readonly DirectoryService $directory,
     ) {}
 
     /**
@@ -87,6 +90,8 @@ class UserController extends Controller
             'photo' => $data['photo'] ?? null,
             'initials' => User::initialsFrom($data['name']),
             'color' => User::colorFrom($data['email']),
+            'active' => true,
+            'activated_at' => now(),
         ]);
 
         if ($user->isProfileComplete()) {
@@ -98,6 +103,7 @@ class UserController extends Controller
         }
 
         $this->sumate->syncParticipantFor($user);
+        $this->directory->syncFromUser($user);
 
         return (new UserAdminResource($user->load(['sumateParticipant', 'roles'])))
             ->response()
@@ -130,7 +136,13 @@ class UserController extends Controller
             $data['email'] = Str::lower($data['email']);
         }
 
+        $wasActive = (bool) $user->getOriginal('active');
         $user->fill($data);
+        $justActivated = array_key_exists('active', $data) && $user->active && ! $wasActive;
+
+        if ($justActivated && ! $user->activated_at) {
+            $user->activated_at = now();
+        }
 
         if (array_key_exists('name', $data)) {
             $user->initials = User::initialsFrom($user->name);
@@ -146,6 +158,11 @@ class UserController extends Controller
         // Al desactivar, cerrar la sesión en todos sus dispositivos.
         if ($user->wasChanged('active') && ! $user->active) {
             $user->tokens()->delete();
+        }
+
+        if ($justActivated) {
+            $this->directory->syncFromUser($user);
+            $user->notify(new AccountActivatedNotification);
         }
 
         if ($roleSlugs !== null) {

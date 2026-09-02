@@ -40,6 +40,9 @@ class UserFactory extends Factory
             'initials' => User::initialsFrom($name),
             'joined_at' => fake()->dateTimeBetween('-3 years')->format('Y-m-d'),
             'profile_completed_at' => now(),
+            // Representa un colaborador ya operando, no un registro recién creado:
+            // los tests que sí quieren "pendiente de activación" lo ponen en null a mano.
+            'activated_at' => now(),
         ];
     }
 

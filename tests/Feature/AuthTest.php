@@ -37,23 +37,28 @@ class AuthTest extends TestCase
             ->assertJsonPath('message', 'Correo o contraseña incorrectos.');
     }
 
-    public function test_register_forces_user_role_and_returns_201(): void
+    public function test_register_creates_an_inactive_pending_account_without_a_token(): void
     {
         $res = $this->postJson('/api/auth/register', [
             'name' => 'Ana Gómez', 'email' => 'ana@insumma.co', 'password' => 'Secreta123', 'area' => 'Comercial',
         ]);
 
-        $res->assertCreated()
-            ->assertJsonPath('user.roleType', 'user')
-            ->assertJsonPath('user.initials', 'AG');
+        $res->assertStatus(202)
+            ->assertJsonPath('pendingActivation', true)
+            ->assertJsonMissingPath('token');
+
+        $user = User::where('email', 'ana@insumma.co')->firstOrFail();
+        $this->assertFalse($user->active);
+        $this->assertNull($user->activated_at);
+        $this->assertSame('user', $user->role_type);
     }
 
     public function test_register_duplicate_email_is_409(): void
     {
-        User::create(['name' => 'A', 'email' => 'dup@x.co', 'password' => 'secret123', 'role_type' => 'user']);
+        User::create(['name' => 'A', 'email' => 'dup@insumma.co', 'password' => 'secret123', 'role_type' => 'user']);
 
         $this->postJson('/api/auth/register', [
-            'name' => 'B', 'email' => 'dup@x.co', 'password' => 'secret123', 'area' => 'X',
+            'name' => 'B', 'email' => 'dup@insumma.co', 'password' => 'secret123', 'area' => 'X',
         ])->assertStatus(409);
     }
 

@@ -73,6 +73,7 @@ class ImportUsersCommand extends Command
                             'joined_at' => null,
                             'extension' => null,
                             'profile_completed_at' => null,
+                            'activated_at' => now(),
                         ]);
                         $created++;
                     }

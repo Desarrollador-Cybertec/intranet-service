@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\ResetPasswordNotification;
 use App\Support\Permissions;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,7 +17,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role', 'role_type', 'initials', 'area', 'phone', 'color', 'joined_at', 'birthday', 'extension', 'photo', 'profile_completed_at', 'active'])]
+#[Fillable(['name', 'email', 'password', 'role', 'role_type', 'initials', 'area', 'phone', 'color', 'joined_at', 'birthday', 'extension', 'photo', 'profile_completed_at', 'active', 'activated_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -58,6 +59,7 @@ class User extends Authenticatable
             'birthday' => 'date',
             'profile_completed_at' => 'datetime',
             'active' => 'boolean',
+            'activated_at' => 'datetime',
         ];
     }
 
@@ -65,6 +67,12 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role_type === 'admin';
+    }
+
+    /** El SPA vive en un origen distinto a esta API: el enlace debe apuntar allá, no a una ruta web de Laravel. */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     public function roles(): BelongsToMany
