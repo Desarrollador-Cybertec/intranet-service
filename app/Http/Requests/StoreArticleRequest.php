@@ -22,7 +22,7 @@ class StoreArticleRequest extends FormRequest
         $required = $this->isMethod('post') ? 'required' : 'sometimes';
 
         return [
-            'type' => [$required, Rule::in(['noticias', 'comunicados', 'reconocimientos', 'eventos'])],
+            'type' => [$required, Rule::in(['noticias', 'comunicados', 'eventos'])],
             'tag' => [$required, 'string', 'max:255'],
             'tagBg' => [$required, 'string', 'max:255'],
             'tagColor' => [$required, 'string', 'max:255'],

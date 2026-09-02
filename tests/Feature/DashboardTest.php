@@ -77,7 +77,7 @@ class DashboardTest extends TestCase
         User::factory()->create(['name' => 'Festejado', 'birthday' => Carbon::today()]);
 
         $this->article(['type' => 'noticias', 'title' => 'Noticia reciente', 'event_date' => null]);
-        $this->article(['type' => 'reconocimientos', 'title' => 'Reco', 'event_date' => null]);
+        $this->article(['type' => 'comunicados', 'title' => 'Comunicado reciente', 'event_date' => null]);
 
         $res = $this->actingAs($viewer)->getJson('/api/dashboard/notifications')->assertOk();
 

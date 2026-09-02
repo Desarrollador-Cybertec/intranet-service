@@ -249,57 +249,6 @@ HTML,
 HTML,
             ],
             [
-                'id' => 30, 'type' => 'reconocimientos',
-                'tag' => '⭐ MVP del Mes', 'tag_bg' => '#FFF3E0', 'tag_color' => '#E65100',
-                'title' => 'Laura Peña — Bioseguridad · Junio 2026',
-                'excerpt' => 'Por liderar la implementación del nuevo protocolo de bioseguridad en planta, reduciendo incidentes en un 40 % en solo tres meses.',
-                'date' => 'Jun 2026', 'author' => 'Nominado por Sandra Ruiz',
-                'imgs' => ['mvp1', 'mvp2', 'mvp3'],
-                'body' => <<<'HTML'
-<div style="display:flex;align-items:center;gap:14px;background:#FFF3E0;border-radius:12px;padding:16px 20px;margin-bottom:20px;">
-               <div style="width:54px;height:54px;border-radius:50%;background:#E65100;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0;">LP</div>
-               <div>
-                   <div style="font-size:17px;font-weight:800;color:#1C2B2D;">Laura Peña</div>
-                   <div style="font-size:12px;color:#E65100;font-weight:600;">Coordinadora de Bioseguridad · Planta Girón</div>
-                   <div style="font-size:11.5px;color:#78909C;margin-top:2px;">Nominada por Sandra Ruiz (HSEQ) · Junio 2026</div>
-               </div>
-           </div>
-           <p><strong>¿Por qué este reconocimiento?</strong></p>
-           <p>🛡️ <strong>40 % de reducción</strong> en incidentes de bioseguridad reportados.<br>
-           📋 Capacitación del 100 % del personal de planta en el nuevo protocolo.<br>
-           🤝 Coordinación con proveedores para adecuación de EPP sin costos adicionales.<br>
-           ✅ Aprobación sin observaciones en la auditoría externa de julio.</p>
-HTML,
-            ],
-            [
-                'id' => 31, 'type' => 'reconocimientos',
-                'tag' => '🤝 Trabajo en Equipo', 'tag_bg' => '#E3F2FD', 'tag_color' => '#1565C0',
-                'title' => 'Equipo Comercial Zona Norte · Junio 2026',
-                'excerpt' => 'Superaron la meta de ventas Q1 en un 18 % gracias a la sinergia y trabajo conjunto de todo el equipo en campo.',
-                'date' => 'Jun 2026', 'author' => 'Gerencia General',
-                'imgs' => ['equipo1', 'equipo2', 'equipo3'],
-                'body' => <<<'HTML'
-<p>📈 <strong>+18 % sobre la meta de ventas Q1</strong> — El mejor trimestre en la historia de la zona.<br>
-           🗺️ Apertura de <strong>23 clientes nuevos</strong> en municipios rurales de Boyacá y Santander.<br>
-           🐄 Crecimiento del 22 % en el segmento bovino.<br>
-           ⏱️ Reducción del ciclo de venta promedio de 12 a 8 días.</p>
-HTML,
-            ],
-            [
-                'id' => 32, 'type' => 'reconocimientos',
-                'tag' => '💡 Innovación', 'tag_bg' => '#E8F5E9', 'tag_color' => '#2E7D32',
-                'title' => 'Roberto Pardo — Metalmecánica · Mayo 2026',
-                'excerpt' => 'Diseñó una solución que optimizó el proceso de producción de equipos, ahorrando 15 horas semanales de operación.',
-                'date' => 'May 2026', 'author' => 'Dir. de Producción',
-                'imgs' => ['innov1', 'innov2', 'innov3'],
-                'body' => <<<'HTML'
-<p>⚙️ <strong>Jig de posicionamiento</strong> diseñado con materiales disponibles en planta, sin inversión externa.<br>
-           ⏱️ <strong>15 horas semanales ahorradas</strong> — equivalentes a casi 2 turnos completos de producción.<br>
-           📉 Reducción del 28 % en el desperdicio de material en el área de corte.<br>
-           🔩 La solución fue adoptada también por las plantas de Bucaramanga y Cali.</p>
-HTML,
-            ],
-            [
                 'id' => 20, 'type' => 'eventos',
                 'tag' => 'Formación', 'tag_bg' => '#E3F2FD', 'tag_color' => '#1565C0',
                 'title' => 'Capacitación: Bioseguridad Q2 2026',

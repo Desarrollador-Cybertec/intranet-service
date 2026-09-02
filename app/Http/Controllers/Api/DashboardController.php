@@ -56,7 +56,7 @@ class DashboardController extends Controller
 
     /**
      * GET /api/dashboard/notifications — feed derivado (cumpleaños de hoy +
-     * últimas noticias/comunicados + reconocimientos), ordenado por fecha desc.
+     * últimas noticias/comunicados), ordenado por fecha desc.
      */
     public function notifications(): JsonResponse
     {
@@ -79,7 +79,6 @@ class DashboardController extends Controller
         $sectionByType = [
             'noticias' => 'enterate',
             'comunicados' => 'enterate',
-            'reconocimientos' => 'reconocimientos',
         ];
 
         $articles = Article::whereIn('type', array_keys($sectionByType))

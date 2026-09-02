@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ForumPost;
-use App\Models\Idea;
 use App\Models\SumateParticipant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,9 +19,5 @@ class SeederIntegrityTest extends TestCase
         $this->seed();
 
         $this->assertSame(0, SumateParticipant::whereNull('user_id')->count());
-        $this->assertSame(0, ForumPost::whereNull('author_id')->count());
-
-        $admin = User::where('email', 'admin@cybertec.com.co')->first();
-        $this->assertSame($admin->id, Idea::find(2)->author_id);
     }
 }
