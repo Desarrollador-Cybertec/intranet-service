@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -73,15 +74,35 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => ['active' => false]);
     }
 
+    /**
+     * Admin "clásico": mantiene el flag legado `role_type=admin` (ya no gobierna
+     * autorización) y además adjunta el rol RBAC `superadmin` (acceso total real).
+     * Es el estado que usan ~30 tests existentes vía `actingAs($this->admin())`.
+     */
     public function admin(): static
     {
         return $this->state(fn (array $attributes) => [
             'role_type' => 'admin',
             'role' => 'Administrador',
-            // Los administradores del sistema pertenecen al dominio gestor: solo ellos
-            // pueden cambiar roles (ver User::canManageRoles). Sobrescribe el email si
-            // necesitas un admin de otro dominio (p. ej. un @insumma.co promovido).
-            'email' => fake()->unique()->userName().'@'.User::ROLE_MANAGER_DOMAIN,
-        ]);
+        ])->afterCreating(function (User $user) {
+            $user->roles()->syncWithoutDetaching(
+                Role::where('slug', Role::SUPERADMIN)->value('id'),
+            );
+        });
+    }
+
+    /** Solo el rol RBAC `superadmin`, sin tocar el flag legado `role_type`. */
+    public function superadmin(): static
+    {
+        return $this->withRoles(Role::SUPERADMIN);
+    }
+
+    /** Adjunta uno o más roles RBAC (por slug) al usuario creado. */
+    public function withRoles(string ...$slugs): static
+    {
+        return $this->afterCreating(function (User $user) use ($slugs) {
+            $ids = Role::whereIn('slug', $slugs)->pluck('id');
+            $user->roles()->syncWithoutDetaching($ids);
+        });
     }
 }

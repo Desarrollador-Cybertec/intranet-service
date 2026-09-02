@@ -3,10 +3,13 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Permissions;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -30,12 +33,6 @@ class User extends Authenticatable
 
     /** Paleta usada en los seeders y en los avatares del front. */
     private const COLORS = ['#2E7D32', '#1565C0', '#F57C00', '#C62828', '#6A1B9A'];
-
-    /**
-     * Dominio cuyos administradores pueden gestionar roles (asignar/retirar admin).
-     * El resto de administradores gestiona contenido y perfiles, pero no roles.
-     */
-    public const ROLE_MANAGER_DOMAIN = 'cybertec.com.co';
 
     /**
      * Sin esto, un usuario recién creado tiene `active` en null hasta releerlo de
@@ -64,19 +61,93 @@ class User extends Authenticatable
         ];
     }
 
+    /** @deprecated usar isSuperadmin() o hasPermission($vista,$accion). Se conserva para EnsureRole/tests legados. */
     public function isAdmin(): bool
     {
         return $this->role_type === 'admin';
     }
 
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class)->withTimestamps()->orderBy('roles.position');
+    }
+
+    public function isSuperadmin(): bool
+    {
+        return $this->roles->contains('slug', Role::SUPERADMIN);
+    }
+
+    public function hasPermission(string $view, string $action = 'ver'): bool
+    {
+        if ($this->isSuperadmin()) {
+            return true;
+        }
+
+        return in_array($action, $this->permissions()[$view] ?? [], true);
+    }
+
     /**
-     * Solo los administradores con correo del dominio gestor pueden cambiar roles
-     * (promover/retirar administradores). Ver UserController::guardRoleChange.
+     * Mapa vista => acciones, unión de todos los roles del usuario + el/los rol(es)
+     * `is_default` (Cualquiera), memoizado por instancia (no en caché: un cambio de
+     * matriz debe verse en la siguiente petición, no esperar a que expire un TTL).
+     *
+     * @return array<string, list<string>>
+     */
+    public function permissions(): array
+    {
+        if ($this->permissionsCache !== null) {
+            return $this->permissionsCache;
+        }
+
+        if ($this->isSuperadmin()) {
+            return $this->permissionsCache = Permissions::all();
+        }
+
+        $roleIds = $this->roles->pluck('id')
+            ->merge(Role::defaults()->pluck('id'))
+            ->unique();
+
+        $map = [];
+        foreach (RolePermission::whereIn('role_id', $roleIds)->get(['view', 'action']) as $p) {
+            $map[$p->view][] = $p->action;
+        }
+
+        return $this->permissionsCache = Permissions::normalize($map);
+    }
+
+    /**
+     * Usuarios que tienen la habilidad dada, para resolver destinatarios (p. ej. quién
+     * recibe la notificación de un registro pendiente). No filtra por `active`: eso lo
+     * decide quien llama.
+     */
+    public function scopeWithPermission(Builder $query, string $view, string $action = 'ver'): Builder
+    {
+        $grantedByDefault = Role::defaults()
+            ->whereHas('permissions', fn ($p) => $p->where('view', $view)->where('action', $action))
+            ->exists();
+
+        // Cualquiera ya lo concede: todo el mundo lo tiene, no hace falta filtrar.
+        if ($grantedByDefault) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($view, $action) {
+            $q->whereHas('roles', fn ($r) => $r->where('slug', Role::SUPERADMIN))
+                ->orWhereHas('roles.permissions', fn ($p) => $p->where('view', $view)->where('action', $action));
+        });
+    }
+
+    private ?array $permissionsCache = null;
+
+    /**
+     * Quién puede administrar roles y asignaciones de rol (ver UserController::guardRoleChange
+     * y PUT /api/users/{user}/roles). Antes era un dominio de correo hardcodeado; ahora es
+     * el mismo permiso que abre Configuraciones — administrar quién tiene qué acceso es,
+     * precisamente, administrar la configuración de permisos.
      */
     public function canManageRoles(): bool
     {
-        return $this->isAdmin()
-            && Str::endsWith(Str::lower((string) $this->email), '@'.self::ROLE_MANAGER_DOMAIN);
+        return $this->hasPermission('configuraciones', 'editar');
     }
 
     /**
