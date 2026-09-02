@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -72,5 +73,30 @@ class AuthTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['id', 'name', 'roleType', 'color', 'joinedAt', 'extension'])
             ->assertJsonPath('joinedAt', '2023-02-15');
+    }
+
+    public function test_me_exposes_permissions_roles_and_superadmin_flag(): void
+    {
+        // Un usuario sin ningún rol RBAC igual hereda lo que concede `cualquiera`.
+        $plainUser = User::factory()->create();
+
+        $this->actingAs($plainUser)->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonStructure(['roles', 'permissions', 'isSuperadmin'])
+            ->assertJsonPath('isSuperadmin', false)
+            ->assertJsonPath('roles', [])
+            ->assertJsonPath('permissions.inicio', ['ver'])
+            ->assertJsonPath('permissions.usuarios', null); // cualquiera no lo concede
+
+        // El superadmin recibe el catálogo COMPLETO expandido (sin casos especiales en el front).
+        $superadmin = User::factory()->admin()->create();
+
+        $res = $this->actingAs($superadmin)->getJson('/api/auth/me')->assertOk();
+        $res->assertJsonPath('isSuperadmin', true);
+        $res->assertJsonPath('roles', ['superadmin']);
+        $this->assertEqualsCanonicalizing(
+            Permissions::ACTIONS,
+            $res->json('permissions.configuraciones'),
+        );
     }
 }

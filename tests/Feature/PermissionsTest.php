@@ -12,9 +12,11 @@ class PermissionsTest extends TestCase
 
     private function user(string $role = 'user'): User
     {
-        return User::factory()->create([
-            'name' => 'U', 'email' => uniqid().'@x.co', 'password' => 'secret123', 'role_type' => $role,
-        ]);
+        // 'admin' además adjunta el rol RBAC superadmin: las rutas de escritura ya
+        // exigen perm:enterate,crear, no solo el flag legado role_type.
+        $factory = $role === 'admin' ? User::factory()->admin() : User::factory();
+
+        return $factory->create(['name' => 'U', 'email' => uniqid().'@x.co', 'password' => 'secret123']);
     }
 
     private function articlePayload(): array

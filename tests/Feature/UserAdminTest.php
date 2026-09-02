@@ -155,47 +155,59 @@ class UserAdminTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($this->admin())->patchJson("/api/users/{$user->id}", ['roleType' => 'admin'])
+        // El flag legado roleType ya no basta para administrar: hace falta el rol RBAC.
+        $this->actingAs($this->admin())->patchJson("/api/users/{$user->id}", ['roleType' => 'admin', 'roleSlugs' => ['superadmin']])
             ->assertOk()->assertJsonPath('roleType', 'admin');
 
         // Y ahora puede administrar.
         $this->actingAs($user->fresh())->getJson('/api/users')->assertOk();
     }
 
-    // ── Gestión de roles: solo el dominio gestor (@cybertec.com.co) ──────────
+    // ── Gestión de roles: exige el permiso configuraciones.editar ────────────
+    //
+    // `$this->admin()` adjunta el rol `superadmin` (todos los permisos). `$plainAdmin`
+    // representa el mismo caso que antes cubría "administrador fuera del dominio
+    // gestor": tiene `usuarios.*` (por el rol `gerencia`, sembrado con ese permiso)
+    // así que SÍ entra a /api/users, pero le falta `configuraciones.editar`, que es
+    // el permiso fino que ahora gobierna la gestión de roles.
 
-    public function test_a_non_cybertec_admin_cannot_change_roles(): void
+    private function plainAdmin(): User
     {
-        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+        return User::factory()->withRoles('gerencia')->create(['role_type' => 'admin']);
+    }
+
+    public function test_an_admin_without_configuraciones_permission_cannot_change_roles(): void
+    {
+        $plainAdmin = $this->plainAdmin();
         $user = User::factory()->create();
 
-        $this->actingAs($insummaAdmin)->patchJson("/api/users/{$user->id}", ['roleType' => 'admin'])
+        $this->actingAs($plainAdmin)->patchJson("/api/users/{$user->id}", ['roleType' => 'admin'])
             ->assertStatus(403)
-            ->assertJsonPath('message', 'Solo los administradores con correo @cybertec.com.co pueden cambiar roles.');
+            ->assertJsonPath('message', 'No tienes permiso para cambiar roles.');
 
         $this->assertSame('user', $user->fresh()->role_type);
     }
 
-    public function test_a_non_cybertec_admin_cannot_create_admins(): void
+    public function test_an_admin_without_configuraciones_permission_cannot_create_admins(): void
     {
-        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+        $plainAdmin = $this->plainAdmin();
 
-        $this->actingAs($insummaAdmin)->postJson('/api/users', [
+        $this->actingAs($plainAdmin)->postJson('/api/users', [
             'name' => 'Nuevo Admin',
             'email' => 'nuevo@insumma.co',
             'password' => 'Insumma2026!',
             'roleType' => 'admin',
         ])->assertStatus(403)
-            ->assertJsonPath('message', 'Solo los administradores con correo @cybertec.com.co pueden crear administradores.');
+            ->assertJsonPath('message', 'No tienes permiso para crear administradores.');
 
         $this->assertDatabaseMissing('users', ['email' => 'nuevo@insumma.co']);
     }
 
-    public function test_a_non_cybertec_admin_can_still_create_regular_users(): void
+    public function test_an_admin_without_configuraciones_permission_can_still_create_regular_users(): void
     {
-        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+        $plainAdmin = $this->plainAdmin();
 
-        $this->actingAs($insummaAdmin)->postJson('/api/users', [
+        $this->actingAs($plainAdmin)->postJson('/api/users', [
             'name' => 'Colaborador Nuevo',
             'email' => 'colab@insumma.co',
             'password' => 'Insumma2026!',
@@ -203,23 +215,23 @@ class UserAdminTest extends TestCase
         ])->assertCreated()->assertJsonPath('roleType', 'user');
     }
 
-    public function test_a_non_cybertec_admin_can_still_edit_profiles_without_touching_the_role(): void
+    public function test_an_admin_without_configuraciones_permission_can_still_edit_profiles_without_touching_the_role(): void
     {
-        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+        $plainAdmin = $this->plainAdmin();
         $user = User::factory()->create(['name' => 'Camila Altamar']);
 
-        $this->actingAs($insummaAdmin)->patchJson("/api/users/{$user->id}", ['area' => 'Logística'])
+        $this->actingAs($plainAdmin)->patchJson("/api/users/{$user->id}", ['area' => 'Logística'])
             ->assertOk()->assertJsonPath('area', 'Logística');
     }
 
-    public function test_me_exposes_can_manage_roles_per_domain(): void
+    public function test_me_exposes_can_manage_roles_from_the_configuraciones_permission(): void
     {
-        $cybertecAdmin = User::factory()->admin()->create();
-        $insummaAdmin = User::factory()->admin()->create(['email' => 'jefe@insumma.co']);
+        $superadmin = $this->admin();
+        $plainAdmin = User::factory()->create(['role_type' => 'admin']);
         $user = User::factory()->create();
 
-        $this->actingAs($cybertecAdmin)->getJson('/api/auth/me')->assertJsonPath('canManageRoles', true);
-        $this->actingAs($insummaAdmin)->getJson('/api/auth/me')->assertJsonPath('canManageRoles', false);
+        $this->actingAs($superadmin)->getJson('/api/auth/me')->assertJsonPath('canManageRoles', true);
+        $this->actingAs($plainAdmin)->getJson('/api/auth/me')->assertJsonPath('canManageRoles', false);
         $this->actingAs($user)->getJson('/api/auth/me')->assertJsonPath('canManageRoles', false);
     }
 
@@ -262,8 +274,9 @@ class UserAdminTest extends TestCase
         $this->actingAs($rescuer)->patchJson("/api/users/{$admin->id}", ['roleType' => 'user'])->assertOk();
 
         // Ahora `rescuer` es el último: no puede degradarse ni ser desactivado.
+        // `$another` necesita el rol RBAC además del flag legado para poder operar.
         $another = User::factory()->create();
-        $this->actingAs($rescuer)->patchJson("/api/users/{$another->id}", ['roleType' => 'admin'])->assertOk();
+        $this->actingAs($rescuer)->patchJson("/api/users/{$another->id}", ['roleType' => 'admin', 'roleSlugs' => ['superadmin']])->assertOk();
         $this->actingAs($another->fresh())->patchJson("/api/users/{$rescuer->id}", ['active' => false])->assertOk();
 
         // Queda `another` como único admin activo: desactivarlo debe fallar.

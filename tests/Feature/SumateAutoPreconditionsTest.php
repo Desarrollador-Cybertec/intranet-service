@@ -28,7 +28,7 @@ class SumateAutoPreconditionsTest extends TestCase
 
         // SumateSeeder exige que existan estos dos usuarios.
         User::factory()->create(['email' => 'user@cybertec.com.co', 'name' => 'Usuario Cybertec']);
-        User::factory()->create(['email' => 'admin@cybertec.com.co', 'name' => 'Admin Cybertec', 'role_type' => 'admin']);
+        User::factory()->admin()->create(['email' => 'admin@cybertec.com.co', 'name' => 'Admin Cybertec']);
 
         $this->seed(CourseSeeder::class);
         $this->seed(SumateSeeder::class);
@@ -148,7 +148,7 @@ class SumateAutoPreconditionsTest extends TestCase
 
     public function test_admin_cannot_hand_edit_an_automatic_precondition(): void
     {
-        $admin = User::factory()->create(['role_type' => 'admin']);
+        $admin = User::factory()->admin()->create();
         $target = $this->participantFor(User::factory()->create());
 
         $this->actingAs($admin)
@@ -161,7 +161,7 @@ class SumateAutoPreconditionsTest extends TestCase
 
     public function test_manual_preconditions_are_still_editable(): void
     {
-        $admin = User::factory()->create(['role_type' => 'admin']);
+        $admin = User::factory()->admin()->create();
         $target = $this->participantFor(User::factory()->create());
 
         $this->actingAs($admin)
@@ -176,7 +176,7 @@ class SumateAutoPreconditionsTest extends TestCase
 
     public function test_eligibility_needs_both_automatic_and_manual_preconditions(): void
     {
-        $admin = User::factory()->create(['role_type' => 'admin']);
+        $admin = User::factory()->admin()->create();
         $user = User::factory()->create(['joined_at' => now()->subYear()]);
         $participant = $this->participantFor($user);
 

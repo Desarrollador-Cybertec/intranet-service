@@ -19,7 +19,9 @@ class SumateTest extends TestCase
 
         // joined_at fijo: la antigüedad es una pre-condición automática (> 3 meses).
         $user = User::factory()->create(['email' => 'user@cybertec.com.co', 'name' => 'Usuario Cybertec', 'role_type' => 'user', 'initials' => 'UC', 'area' => 'Comercial', 'joined_at' => now()->subYears(2)]);
-        $admin = User::factory()->create(['email' => 'admin@cybertec.com.co', 'name' => 'Administrador Cybertec', 'role_type' => 'admin', 'initials' => 'AC', 'area' => 'TI', 'joined_at' => now()->subYears(2)]);
+        // ->admin() adjunta además el rol RBAC superadmin: /api/sumate/acciones y
+        // /precondiciones ahora exigen perm:sumate,editar, no solo el flag legado.
+        $admin = User::factory()->admin()->create(['email' => 'admin@cybertec.com.co', 'name' => 'Administrador Cybertec', 'initials' => 'AC', 'area' => 'TI', 'joined_at' => now()->subYears(2)]);
 
         $this->seed(CourseSeeder::class);
         $this->seed(SumateSeeder::class);
