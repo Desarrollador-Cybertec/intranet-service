@@ -24,7 +24,10 @@ class PermissionEnforcementTest extends TestCase
         $role->syncMatrix(['configuraciones' => ['ver']]);
         $user = User::factory()->withRoles($role->slug)->create();
 
-        $this->actingAs($user)->getJson('/api/roles')->assertOk();
+        // GET /api/roles vive bajo usuarios.ver (lo consume la UI de Usuarios, no
+        // Configuraciones): la prueba de lectura usa /api/permissions/catalog, que sí
+        // sigue exclusivamente bajo configuraciones.
+        $this->actingAs($user)->getJson('/api/permissions/catalog')->assertOk();
         $this->actingAs($user)->postJson('/api/roles', ['name' => 'Nuevo'])->assertForbidden();
     }
 
@@ -34,7 +37,7 @@ class PermissionEnforcementTest extends TestCase
         $role->syncMatrix(['configuraciones' => ['ver', 'crear']]);
         $user = User::factory()->withRoles($role->slug)->create();
 
-        $this->actingAs($user)->getJson('/api/roles')->assertOk();
+        $this->actingAs($user)->getJson('/api/permissions/catalog')->assertOk();
         $this->actingAs($user)->postJson('/api/roles', ['name' => 'Nuevo Rol'])->assertCreated();
 
         $other = Role::factory()->create();
@@ -45,7 +48,7 @@ class PermissionEnforcementTest extends TestCase
     {
         $user = User::factory()->create(); // solo `cualquiera`, que no concede configuraciones
 
-        $this->actingAs($user)->getJson('/api/roles')
+        $this->actingAs($user)->getJson('/api/permissions/catalog')
             ->assertStatus(403)
             ->assertJsonPath('message', 'Esta sección no está habilitada para tu rol.');
     }
@@ -99,11 +102,11 @@ class PermissionEnforcementTest extends TestCase
         $role = Role::factory()->create();
         $user = User::factory()->withRoles($role->slug)->create();
 
-        $this->actingAs($user)->getJson('/api/roles')->assertForbidden();
+        $this->actingAs($user)->getJson('/api/permissions/catalog')->assertForbidden();
 
         $role->syncMatrix(['configuraciones' => ['ver']]);
 
         // Nueva petición == nueva instancia de User resuelta por el guard: sin caché que lo impida.
-        $this->actingAs($user->fresh())->getJson('/api/roles')->assertOk();
+        $this->actingAs($user->fresh())->getJson('/api/permissions/catalog')->assertOk();
     }
 }

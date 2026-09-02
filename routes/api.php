@@ -114,6 +114,10 @@ Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(functi
         Route::patch('/users/{user}', [UserController::class, 'update'])->middleware('perm:usuarios,editar');
         Route::post('/users/{user}/password', [UserController::class, 'resetPassword'])->middleware('perm:usuarios,editar');
         Route::put('/users/{user}/roles', [UserController::class, 'setRoles'])->middleware('perm:usuarios,editar');
+        // El catálogo de roles (para el filtro y los chips de asignación) lo consume
+        // exclusivamente la UI de Usuarios, no Configuraciones (que usa /permissions/matrix,
+        // donde los roles ya vienen incluidos) — por eso vive bajo usuarios.ver, no configuraciones.
+        Route::get('/roles', [RoleController::class, 'index']);
     });
 
     // ── Roles y permisos (Configuraciones) ─────────────────────────
@@ -122,7 +126,6 @@ Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(functi
         Route::get('/permissions/matrix', [PermissionController::class, 'matrix']);
         Route::put('/permissions/matrix', [PermissionController::class, 'updateMatrix'])->middleware('perm:configuraciones,editar');
 
-        Route::get('/roles', [RoleController::class, 'index']);
         Route::post('/roles', [RoleController::class, 'store'])->middleware('perm:configuraciones,crear');
         Route::get('/roles/{role}', [RoleController::class, 'show']);
         Route::patch('/roles/{role}', [RoleController::class, 'update'])->middleware('perm:configuraciones,editar');
