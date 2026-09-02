@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SumateController;
+use App\Http\Controllers\Api\SumateCourseController;
+use App\Http\Controllers\Api\SumateRequestController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -92,10 +94,23 @@ Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(functi
 
     // ── Súmate (lectura para quien tenga sumate.ver) ───────────────
     Route::get('/sumate/participants', [SumateController::class, 'participants'])->middleware('perm:sumate');
+    // Autogestión: cualquiera con sumate.ver (línea base de "Cualquiera") puede reportar
+    // una acción propia y ver sus propios reportes.
+    Route::post('/sumate/solicitudes', [SumateRequestController::class, 'store'])->middleware('perm:sumate');
+    Route::get('/sumate/solicitudes/mias', [SumateRequestController::class, 'mine'])->middleware('perm:sumate');
     Route::middleware('perm:sumate,editar')->group(function () {
         Route::post('/sumate/acciones', [SumateController::class, 'registerAction']);
         Route::patch('/sumate/participants/{participant}/precondiciones', [SumateController::class, 'setPreconditions']);
         Route::put('/sumate/config', [SumateController::class, 'updateConfig']);
+        // .editar, no .ver: "Cualquiera" ya trae sumate.ver de línea base — la bandeja de
+        // aprobación (con reportes ajenos) es una capacidad de gestión, no de lectura general.
+        Route::get('/sumate/solicitudes', [SumateRequestController::class, 'index']);
+        Route::post('/sumate/solicitudes/{sumateRequest}/aprobar', [SumateRequestController::class, 'approve']);
+        Route::post('/sumate/solicitudes/{sumateRequest}/rechazar', [SumateRequestController::class, 'reject']);
+        // Panel admin de la precondición automática "capacitaciones".
+        Route::get('/sumate/cursos', [SumateCourseController::class, 'index']);
+        Route::get('/sumate/cursos/{course}/completados', [SumateCourseController::class, 'completions']);
+        Route::post('/sumate/cursos/{course}/completados', [SumateCourseController::class, 'setCompletion']);
     });
 
     // ── Gestión: RH / SST / SIG / SINTYC / Inicio (catálogos de módulos) ──
