@@ -16,7 +16,7 @@ class SumateRequestAdminResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'accion' => ['id' => $this->accion->slug, 'label' => $this->accion->label, 'ptsEach' => $this->accion->pts_each, 'max' => $this->accion->max],
+            'accion' => ['id' => $this->accion->slug, 'label' => $this->accion->label, 'icon' => $this->accion->icon, 'ptsEach' => $this->accion->pts_each, 'max' => $this->accion->max],
             'participant' => ['id' => $participant->id, 'name' => $participant->name],
             'user' => ['id' => $this->user->id, 'name' => $this->user->name, 'email' => $this->user->email],
             'description' => $this->description,
