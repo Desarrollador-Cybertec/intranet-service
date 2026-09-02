@@ -1,8 +1,8 @@
 <?php
 
 use App\Http\Middleware\EnsureActive;
+use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\EnsureProfileCompleted;
-use App\Http\Middleware\EnsureRole;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -22,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role' => EnsureRole::class,
+            'perm' => EnsurePermission::class,
             'active' => EnsureActive::class,
             'profile.completed' => EnsureProfileCompleted::class,
         ]);

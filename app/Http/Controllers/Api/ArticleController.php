@@ -45,17 +45,30 @@ class ArticleController extends Controller
         return (new ArticleResource($article))->response()->setStatusCode(201);
     }
 
-    /** PUT /api/{...}/{article} · admin */
-    public function update(StoreArticleRequest $request, Article $article): ArticleResource
+    /**
+     * PUT /api/{...}/{article} · admin.
+     * El `type` de la ruta debe coincidir con el del artículo: sin esto, alguien con
+     * permiso de editar sobre UN tipo (p. ej. enterate.editar) podría editar un
+     * artículo de OTRO tipo (p. ej. un evento) resuelto por id vía otra URL.
+     */
+    public function update(StoreArticleRequest $request, Article $article): ArticleResource|JsonResponse
     {
+        if ($article->type !== $this->type($request)) {
+            return response()->json(['message' => 'Recurso no encontrado.'], 404);
+        }
+
         $article->update($request->mapped());
 
         return new ArticleResource($article);
     }
 
     /** DELETE /api/{...}/{article} · admin */
-    public function destroy(Article $article): JsonResponse
+    public function destroy(Request $request, Article $article): JsonResponse
     {
+        if ($article->type !== $this->type($request)) {
+            return response()->json(['message' => 'Recurso no encontrado.'], 404);
+        }
+
         $article->delete();
 
         return response()->json(['success' => true]);
