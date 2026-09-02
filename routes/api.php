@@ -97,13 +97,15 @@ Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(functi
         Route::put('/sumate/config', [SumateController::class, 'updateConfig']);
     });
 
-    // ── Gestión: RH / SST / SIG (catálogos de módulos) ────────────
-    foreach (['rh', 'sst', 'sig'] as $section) {
+    // ── Gestión: RH / SST / SIG / SINTYC / Inicio (catálogos de módulos) ──
+    foreach (['rh', 'sst', 'sig', 'sintyc', 'inicio'] as $section) {
         Route::middleware("perm:{$section}")->group(function () use ($section) {
             Route::get("/{$section}/modules", [ModuleController::class, 'index'])->defaults('section', $section);
+            Route::get("/{$section}/modules/all", [ModuleController::class, 'all'])->defaults('section', $section)->middleware("perm:{$section},editar");
             Route::post("/{$section}/modules", [ModuleController::class, 'store'])->defaults('section', $section)->middleware("perm:{$section},crear");
-            Route::put("/{$section}/modules/{module}", [ModuleController::class, 'update'])->defaults('section', $section)->middleware("perm:{$section},editar");
-            Route::delete("/{$section}/modules/{module}", [ModuleController::class, 'destroy'])->defaults('section', $section)->middleware("perm:{$section},eliminar");
+            Route::patch("/{$section}/modules/reorder", [ModuleController::class, 'reorder'])->defaults('section', $section)->middleware("perm:{$section},editar");
+            Route::put("/{$section}/modules/{slug}", [ModuleController::class, 'update'])->defaults('section', $section)->middleware("perm:{$section},editar");
+            Route::delete("/{$section}/modules/{slug}", [ModuleController::class, 'destroy'])->defaults('section', $section)->middleware("perm:{$section},eliminar");
         });
     }
 

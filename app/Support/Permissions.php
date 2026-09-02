@@ -19,7 +19,7 @@ class Permissions
      * @var array<string, list<string>>
      */
     private const VIEW_ACTIONS = [
-        'inicio' => ['ver'],
+        'inicio' => ['ver', 'editar'],
         'enterate' => ['ver', 'crear', 'editar', 'eliminar'],
         'directorio' => ['ver', 'crear', 'editar', 'eliminar'],
         'calendario' => ['ver', 'crear', 'editar', 'eliminar'],

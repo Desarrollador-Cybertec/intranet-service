@@ -21,6 +21,11 @@ class ModuleResource extends JsonResource
             'color' => $this->color,
             'bg' => $this->bg,
             'desc' => $this->desc,
+            'type' => $this->type,
+            'href' => $this->href,
+            'config' => $this->config,
+            'visible' => $this->visible,
+            'position' => $this->position,
         ];
     }
 }
