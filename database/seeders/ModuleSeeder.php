@@ -33,6 +33,13 @@ class ModuleSeeder extends Seeder
             ['section' => 'sig', 'slug' => 'inocuidad', 'label' => 'Inocuidad (ISO 22000)', 'icon' => '🧪', 'color' => '#6A1B9A', 'bg' => '#F3E5F5', 'desc' => 'Buenas prácticas de manufactura, HACCP y control de puntos críticos.'],
             ['section' => 'sig', 'slug' => 'documentacion', 'label' => 'Documentación y registros', 'icon' => '📂', 'color' => '#F57C00', 'bg' => '#FFF3E0', 'desc' => 'Control de documentos externos e internos, versiones vigentes y distribución.'],
             ['section' => 'sig', 'slug' => 'auditorias', 'label' => 'Auditorías internas', 'icon' => '🔎', 'color' => '#00695C', 'bg' => '#E0F2F1', 'desc' => 'Programación de auditorías, listas de verificación e informes de resultados.'],
+
+            // SIG › heredado de SICREO 2.0 (eliminado en F2; contenido migrado aquí)
+            ['section' => 'sig', 'slug' => 'solpec', 'label' => 'SOLPEC', 'icon' => '🐖', 'color' => '#1565C0', 'bg' => '#E3F2FD', 'desc' => 'Proyectos integrales de porcicultura. Sistema externo.'],
+            ['section' => 'sig', 'slug' => 'codorcol', 'label' => 'CODORCOL', 'icon' => '🥚', 'color' => '#F57C00', 'bg' => '#FFF3E0', 'desc' => 'Proveedor mayorista de huevos de codorniz. Sistema externo.'],
+            ['section' => 'sig', 'slug' => 'mpd', 'label' => 'MPD — Procesos de Dirección', 'icon' => '🧭', 'color' => '#6A1B9A', 'bg' => '#F3E5F5', 'desc' => 'Gestión Estratégica (GE), Sistemas Integrados (SI) y Gestión del Saber (GS). Repositorio en Nextcloud.'],
+            ['section' => 'sig', 'slug' => 'mpo', 'label' => 'MPO — Procesos Operacionales', 'icon' => '⚙️', 'color' => '#00695C', 'bg' => '#E0F2F1', 'desc' => 'Gestión Comercial (GC), Cadena de Suministro (GL) y Gestión de Operaciones (GO). Repositorio en Nextcloud.'],
+            ['section' => 'sig', 'slug' => 'mpa', 'label' => 'MPA — Procesos de Apoyo', 'icon' => '🤝', 'color' => '#2E7D32', 'bg' => '#E8F5E9', 'desc' => 'Financiera y Contable (GF), Talento Humano (GH), Infraestructura (GI) e Información (TI). Repositorio en Nextcloud.'],
         ];
 
         foreach ($modules as $i => $m) {
