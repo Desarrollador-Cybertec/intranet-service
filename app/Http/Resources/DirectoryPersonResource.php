@@ -2,15 +2,17 @@
 
 namespace App\Http\Resources;
 
+use App\Models\DirectoryPerson;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Proyección pública de un `User` para el Directorio (sin datos sensibles).
- * `image` es la foto de perfil; si es null el front pinta `initials` + `color`.
+ * Proyección pública de una `DirectoryPerson` (sin datos de gestión). Se conserva
+ * exactamente la misma forma que cuando el Directorio era una proyección de
+ * `users`, para no romper al frontend.
  *
- * @mixin User
+ * @mixin DirectoryPerson
  */
 class DirectoryPersonResource extends JsonResource
 {
@@ -26,7 +28,7 @@ class DirectoryPersonResource extends JsonResource
             'area' => $this->area,
             'image' => $this->photo,
             'initials' => $this->initials ?: User::initialsFrom($this->name),
-            'color' => $this->color ?: User::colorFrom($this->email),
+            'color' => $this->color ?: User::colorFrom($this->email ?? $this->name),
             'email' => $this->email,
             'phone' => $this->extension ? "Ext. {$this->extension}" : ($this->phone ?? ''),
         ];

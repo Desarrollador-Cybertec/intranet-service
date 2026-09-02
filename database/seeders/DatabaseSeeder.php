@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             QaSeeder::class,
+            DirectorySeeder::class,
             ArticleSeeder::class,
             CourseSeeder::class,
             ModuleSeeder::class,
