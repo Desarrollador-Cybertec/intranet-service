@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Forms\FormRegistry;
 use App\Models\Module;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -59,8 +60,12 @@ class StoreModuleRequest extends FormRequest
                 $validator->errors()->add('href', 'Un módulo de tipo documento necesita un archivo (href o config.docs).');
             }
 
-            if ($type === 'formulario' && empty($config['formSlug'])) {
-                $validator->errors()->add('config', 'Un módulo de tipo formulario necesita config.formSlug.');
+            if ($type === 'formulario') {
+                if (empty($config['formSlug'])) {
+                    $validator->errors()->add('config', 'Un módulo de tipo formulario necesita config.formSlug.');
+                } elseif (! in_array($config['formSlug'], FormRegistry::slugs(), true)) {
+                    $validator->errors()->add('config', 'config.formSlug no corresponde a ningún formulario registrado.');
+                }
             }
 
             if ($type === 'calendario' && empty($config['calendarUrl'])) {

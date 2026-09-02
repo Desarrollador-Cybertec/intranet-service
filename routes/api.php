@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DirectoryController;
 use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\FormController;
 use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
@@ -108,6 +109,17 @@ Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(functi
             Route::delete("/{$section}/modules/{slug}", [ModuleController::class, 'destroy'])->defaults('section', $section)->middleware("perm:{$section},eliminar");
         });
     }
+
+    // ── Formularios dinámicos (RH/SST) ─────────────────────────────
+    // /forms/submissions/* antes de /forms/{slug} — si no, {slug} captura "submissions".
+    Route::get('/forms/submissions/mine', [FormController::class, 'mine']);
+    Route::get('/forms/submissions/{submission}', [FormController::class, 'showSubmission']);
+    Route::patch('/forms/submissions/{submission}', [FormController::class, 'updateSubmission']);
+    Route::get('/forms/submissions/{submission}/attachments/{attachment}', [FormController::class, 'downloadAttachment']);
+    Route::get('/forms', [FormController::class, 'index']);
+    Route::get('/forms/{slug}', [FormController::class, 'show']);
+    Route::post('/forms/{slug}/submissions', [FormController::class, 'store']);
+    Route::get('/forms/{slug}/submissions', [FormController::class, 'forSection']);
 
     // ── Administración de usuarios ──────────────────────────────────
     Route::middleware('perm:usuarios')->group(function () {

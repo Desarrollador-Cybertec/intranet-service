@@ -22,4 +22,25 @@ return [
     | es la URL de esta API.
     */
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Destinatarios de los formularios dinámicos (Parte B)
+    |--------------------------------------------------------------------------
+    | Orden de resolución real (ver FormController::resolveRecipients): primero
+    | modules.config.recipients del módulo que expone el formulario (editable
+    | desde Configuraciones sin deploy), luego esta lista por slug, y por
+    | último 'default'. Si las tres quedan vacías, la solicitud se guarda
+    | igual y se registra un Log::warning en vez de fallar el envío.
+    | TODO: pendiente el correo real de RRHH/SST del cliente.
+    */
+    'forms' => [
+        'destinatarios' => [
+            'certificado-laboral' => array_filter(array_map('trim', explode(',', env('INSUMMA_FORMS_TO_RRHH', '')))),
+            'certificado-ingresos-retenciones' => array_filter(array_map('trim', explode(',', env('INSUMMA_FORMS_TO_RRHH', '')))),
+            'condiciones-inseguras' => array_filter(array_map('trim', explode(',', env('INSUMMA_FORMS_TO_SST', '')))),
+            'accidente-trabajo' => array_filter(array_map('trim', explode(',', env('INSUMMA_FORMS_TO_SST', '')))),
+            'default' => array_filter(array_map('trim', explode(',', env('INSUMMA_FORMS_TO_DEFAULT', '')))),
+        ],
+    ],
 ];
