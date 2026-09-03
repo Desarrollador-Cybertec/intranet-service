@@ -8,6 +8,7 @@ use App\Models\SumateNivel;
 use App\Models\SumatePrecondicion;
 use App\Models\User;
 use App\Services\SumateService;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 /**
@@ -18,8 +19,12 @@ use Illuminate\Database\Seeder;
  */
 class SumateSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     public function run(SumateService $sumate): void
     {
+        $this->abortIfProduction();
+
         SumateConfig::updateOrCreate(['trimestre' => 'Q3 2026'], [
             'periodo_label' => 'Julio – Septiembre 2026',
             'cierre_label' => '30 sep 2026',

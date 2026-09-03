@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Article;
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -22,11 +23,15 @@ use Illuminate\Support\Facades\Hash;
  */
 class QaSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     /** Contraseña común de las cuentas @insumma.co (documentada también en docs/API.md). */
     public const QA_PASSWORD = 'Insumma2026!';
 
     public function run(): void
     {
+        $this->abortIfProduction();
+
         $today = Carbon::today();
 
         // Cuentas fijas que ForumSeeder / IdeaSeeder / CourseSeeder / SumateSeeder

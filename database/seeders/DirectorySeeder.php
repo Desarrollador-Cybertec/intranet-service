@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\DirectoryPerson;
 use App\Models\User;
 use App\Services\DirectoryService;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 /**
@@ -14,8 +15,12 @@ use Illuminate\Database\Seeder;
  */
 class DirectorySeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     public function run(DirectoryService $directory): void
     {
+        $this->abortIfProduction();
+
         User::where('active', true)->whereNotNull('profile_completed_at')->each(
             fn (User $user) => $directory->syncFromUser($user)
         );

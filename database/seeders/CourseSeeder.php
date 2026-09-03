@@ -4,12 +4,17 @@ namespace Database\Seeders;
 
 use App\Models\Course;
 use App\Models\User;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 class CourseSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     public function run(): void
     {
+        $this->abortIfProduction();
+
         $courses = [
             ['id' => 1, 'label' => 'Inducción corporativa', 'icon' => '🏢', 'tag' => 'Obligatorio', 'tag_color' => '#C62828', 'tag_bg' => '#FFEBEE', 'desc' => 'Conoce la misión, visión, valores y estructura organizacional de Insumma Business Group.', 'duration' => '4 horas', 'modality' => 'Virtual'],
             ['id' => 2, 'label' => 'Bioseguridad y manejo de productos', 'icon' => '🧪', 'tag' => 'Obligatorio', 'tag_color' => '#C62828', 'tag_bg' => '#FFEBEE', 'desc' => 'Protocolos de bioseguridad, uso de EPP y manejo seguro de productos veterinarios.', 'duration' => '8 horas', 'modality' => 'Mixto'],

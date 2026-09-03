@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Article;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 /**
@@ -11,8 +12,12 @@ use Illuminate\Database\Seeder;
  */
 class ArticleSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     public function run(): void
     {
+        $this->abortIfProduction();
+
         foreach ($this->articles() as $a) {
             Article::updateOrCreate(['id' => $a['id']], $a);
         }

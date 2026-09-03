@@ -3,12 +3,17 @@
 namespace Database\Seeders;
 
 use App\Models\Module;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 class ModuleSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     public function run(): void
     {
+        $this->abortIfProduction();
+
         $modules = [
             // RH (rhMock.ts)
             ['section' => 'rh', 'slug' => 'documentos', 'label' => 'Mis documentos', 'icon' => '📄', 'color' => '#1565C0', 'bg' => '#E3F2FD', 'desc' => 'Contrato, paz y salvo, certificaciones laborales y otros documentos personales.'],
