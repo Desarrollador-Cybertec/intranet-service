@@ -45,10 +45,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 // ── Resto de la app: exige además tener el perfil completo ────────
 Route::middleware(['auth:sanctum', 'active', 'profile.completed'])->group(function () {
 
-    // ── Inicio (dashboard): KPIs, cumpleaños y notificaciones ─────
+    // ── Inicio (dashboard): KPIs, cumpleaños, notificaciones y edición ─
     Route::middleware('perm:inicio')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'summary']);
         Route::get('/dashboard/notifications', [DashboardController::class, 'notifications']);
+        Route::put('/dashboard/banner', [DashboardController::class, 'updateBanner'])->middleware('perm:inicio,editar');
     });
 
     // ── Entérate: noticias y comunicados ──────────────────────────

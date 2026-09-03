@@ -43,4 +43,22 @@ return [
             'default' => array_filter(array_map('trim', explode(',', env('INSUMMA_FORMS_TO_DEFAULT', '')))),
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Inicio editable (Parte D)
+    |--------------------------------------------------------------------------
+    | Banner del dashboard: vive en la tabla `settings` (clave "inicio.banner")
+    | una vez que alguien lo edita desde la UI; mientras tanto se usa esto.
+    */
+    'inicio' => [
+        'banner' => [
+            'title' => '¡Bienvenido a tu espacio de trabajo digital!',
+            'message' => 'Aquí encontrarás todo lo que necesitas para tu día a día en Insumma Business Group.',
+            'colorFrom' => '#1B5E20',
+            'colorTo' => '#388E3C',
+            'ctaLabel' => null,
+            'ctaSection' => null,
+        ],
+    ],
 ];
