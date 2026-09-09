@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Course;
 use App\Models\User;
 use Database\Seeders\CourseSeeder;
+use Database\Seeders\SumateDemoParticipantsSeeder;
 use Database\Seeders\SumateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -25,6 +26,7 @@ class SumateTest extends TestCase
 
         $this->seed(CourseSeeder::class);
         $this->seed(SumateSeeder::class);
+        $this->seed(SumateDemoParticipantsSeeder::class);
 
         // Capacitaciones también es automática: ambos completan los obligatorios.
         // La no-elegibilidad del admin viene de 'disciplinarios' (manual), vía SumateSeeder.

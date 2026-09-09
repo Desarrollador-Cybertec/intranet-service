@@ -33,6 +33,8 @@ class StoreArticleRequest extends FormRequest
             'author' => [$required, 'string', 'max:255'],
             'imgs' => ['sometimes', 'array'],
             'imgs.*' => ['string'],
+            'images' => ['sometimes', 'array', 'max:6'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'body' => [$required, 'string'],
         ];
     }
@@ -57,6 +59,9 @@ class StoreArticleRequest extends FormRequest
             $data['event_date'] = $data['eventDate'];
             unset($data['eventDate']);
         }
+        // 'images' son los UploadedFile nuevos; el controller los sube y anexa las
+        // URLs resultantes a 'imgs' — no es una columna del modelo.
+        unset($data['images']);
 
         return $data;
     }

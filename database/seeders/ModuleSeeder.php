@@ -3,25 +3,24 @@
 namespace Database\Seeders;
 
 use App\Models\Module;
-use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
+/**
+ * Contenido real de RH/SST/SIG/S!NTyC/Inicio (labels, íconos, enlaces reales del
+ * negocio). No es data de prueba — a diferencia del resto de seeders, este SÍ debe
+ * poder correr en producción (`php artisan db:seed --class=ModuleSeeder`), porque
+ * las migraciones solo crean la tabla vacía: sin esto, esas 4 secciones y los
+ * accesos rápidos de Inicio quedan sin contenido después de desplegar.
+ * Idempotente (updateOrCreate por section+slug): correrlo de nuevo solo actualiza.
+ */
 class ModuleSeeder extends Seeder
 {
-    use RefusesProductionSeeding;
-
     public function run(): void
     {
-        $this->abortIfProduction();
-
         $modules = [
             // RH (rhMock.ts)
             ['section' => 'rh', 'slug' => 'documentos', 'label' => 'Mis documentos', 'icon' => '📄', 'color' => '#1565C0', 'bg' => '#E3F2FD', 'desc' => 'Contrato, paz y salvo, certificaciones laborales y otros documentos personales.'],
             ['section' => 'rh', 'slug' => 'permisos', 'label' => 'Solicitud de permisos', 'icon' => '📅', 'color' => '#2E7D32', 'bg' => '#E8F5E9', 'desc' => 'Radicación de permisos, vacaciones, licencias y ausencias justificadas.'],
-            ['section' => 'rh', 'slug' => 'nomina', 'label' => 'Nómina y liquidaciones', 'icon' => '💰', 'color' => '#F57C00', 'bg' => '#FFF3E0', 'desc' => 'Consulta de desprendibles de pago, liquidaciones y deducciones.', 'visible' => false],
-            ['section' => 'rh', 'slug' => 'desempeno', 'label' => 'Evaluación de desempeño', 'icon' => '📊', 'color' => '#6A1B9A', 'bg' => '#F3E5F5', 'desc' => 'Seguimiento a objetivos, evaluaciones periódicas y planes de mejora individual.', 'visible' => false],
-            ['section' => 'rh', 'slug' => 'bienestar', 'label' => 'Bienestar laboral', 'icon' => '🌟', 'color' => '#00695C', 'bg' => '#E0F2F1', 'desc' => 'Programas de bienestar, subsidios, auxilios y beneficios para colaboradores.', 'visible' => false],
-            ['section' => 'rh', 'slug' => 'disciplinaria', 'label' => 'Gestión disciplinaria', 'icon' => '⚖️', 'color' => '#C62828', 'bg' => '#FFEBEE', 'desc' => 'Procedimientos, descargos y seguimiento de procesos disciplinarios.', 'visible' => false],
 
             // RH › nuevos (constructor de módulos)
             ['section' => 'rh', 'slug' => 'rit', 'label' => 'Reglamento Interno de Trabajo', 'icon' => '📘', 'color' => '#1565C0', 'bg' => '#E3F2FD', 'desc' => 'Consulta el Reglamento Interno de Trabajo (RIT) vigente.', 'type' => 'documento', 'href' => 'https://insumma.co/rit.pdf'],

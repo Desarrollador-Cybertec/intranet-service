@@ -6,25 +6,19 @@ use App\Models\SumateAccion;
 use App\Models\SumateConfig;
 use App\Models\SumateNivel;
 use App\Models\SumatePrecondicion;
-use App\Models\User;
-use App\Services\SumateService;
-use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 /**
- * Datos del programa Súmate (sumateMock.ts). Q3 2026.
- * Cada participante se enlaza a un usuario real (users.email); name/initials/color/area
- * se derivan del User, no se duplican, para que sumate_participants.user_id quede
- * siempre íntegro (requiere que los usuarios ya existan: scripts/create-test-users.php).
+ * Catálogo real del programa Súmate para el trimestre vigente: período, precondiciones,
+ * acciones reportables y niveles de beneficio. No es data de prueba — SÍ debe poder
+ * correr en producción (`php artisan db:seed --class=SumateSeeder`): sin esto, Súmate
+ * queda sin acciones para reportar ni niveles que alcanzar. Idempotente (updateOrCreate
+ * por slug/nivel/trimestre): correrlo de nuevo solo actualiza.
  */
 class SumateSeeder extends Seeder
 {
-    use RefusesProductionSeeding;
-
-    public function run(SumateService $sumate): void
+    public function run(): void
     {
-        $this->abortIfProduction();
-
         SumateConfig::updateOrCreate(['trimestre' => 'Q3 2026'], [
             'periodo_label' => 'Julio – Septiembre 2026',
             'cierre_label' => '30 sep 2026',
@@ -62,49 +56,6 @@ class SumateSeeder extends Seeder
         ];
         foreach ($niveles as $n) {
             SumateNivel::updateOrCreate(['nivel' => $n['nivel']], $n);
-        }
-
-        $participantes = [
-            // Solo las manuales: antigüedad y capacitaciones las deriva SumateService.
-            // yoAporto/mejora/infraestructura quedan al tope (3/2/1): sirve para probar
-            // que aprobar una solicitud por encima del tope de su acción otorga 0 puntos.
-            ['email' => 'user@cybertec.com.co', 'pre' => ['puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true], 'acc' => ['yoAporto' => 3, 'mejora' => 2, 'infraestructura' => 1, 'inseguras' => 2, 'redes' => 2]],
-            ['email' => 'admin@cybertec.com.co', 'pre' => ['puntualidad' => true, 'asistencia' => true, 'disciplinarios' => false], 'acc' => ['yoAporto' => 2, 'mejora' => 1, 'infraestructura' => 0, 'inseguras' => 1, 'redes' => 1]],
-        ];
-
-        $usersByEmail = User::whereIn('email', collect($participantes)->pluck('email')->unique())
-            ->get()
-            ->keyBy('email');
-
-        $accionIds = SumateAccion::pluck('id', 'slug');
-
-        foreach ($participantes as $data) {
-            $user = $usersByEmail[$data['email']] ?? null;
-
-            if (! $user) {
-                throw new \RuntimeException("SumateSeeder: no existe el usuario {$data['email']}. Corre php artisan users:import primero.");
-            }
-
-            $participant = $sumate->syncParticipantFor($user);
-            $sumate->setPreconditions($participant, $data['pre']);
-
-            foreach ($data['acc'] as $slug => $count) {
-                $participant->actionCounts()->updateOrCreate(
-                    ['accion_id' => $accionIds[$slug]],
-                    ['count' => $count],
-                );
-            }
-        }
-
-        // Cuenta QA @insumma.co elegible y sin acciones aún: caso feliz de autogestión
-        // (reportar → aprobar → puntos visibles) sin depender de las cuentas legacy
-        // @cybertec.com.co. Opcional a propósito (no lanza si falta): a diferencia de
-        // los dos participantes de arriba, varios tests siembran SumateSeeder aislado
-        // (sin QaSeeder primero) y ahí "demo@insumma.co" nunca existe.
-        $demo = User::where('email', 'demo@insumma.co')->first();
-        if ($demo) {
-            $participant = $sumate->syncParticipantFor($demo);
-            $sumate->setPreconditions($participant, ['puntualidad' => true, 'asistencia' => true, 'disciplinarios' => true]);
         }
     }
 }

@@ -8,6 +8,9 @@ use App\Http\Resources\ArticleResource;
 use App\Models\Article;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Feed unificado: sirve noticias, comunicados, reconocimientos y eventos.
@@ -40,7 +43,12 @@ class ArticleController extends Controller
         $data['type'] = $data['type'] ?? $this->type($request);
         $data['imgs'] = $data['imgs'] ?? [];
 
-        $article = Article::create($data);
+        $article = DB::transaction(function () use ($request, $data) {
+            $article = Article::create($data);
+            $this->attachImages($request, $article);
+
+            return $article;
+        });
 
         return (new ArticleResource($article))->response()->setStatusCode(201);
     }
@@ -57,9 +65,29 @@ class ArticleController extends Controller
             return response()->json(['message' => 'Recurso no encontrado.'], 404);
         }
 
-        $article->update($request->mapped());
+        DB::transaction(function () use ($request, $article) {
+            $article->update($request->mapped());
+            $this->attachImages($request, $article);
+        });
 
         return new ArticleResource($article);
+    }
+
+    /** Sube las imágenes nuevas (campo `images[]`) y las anexa a `imgs` del artículo. */
+    private function attachImages(Request $request, Article $article): void
+    {
+        /** @var UploadedFile[] $files */
+        $files = $request->file('images', []);
+        if (empty($files)) {
+            return;
+        }
+
+        $urls = array_map(
+            fn (UploadedFile $file) => Storage::disk('public')->url($file->store("articles/{$article->type}", 'public')),
+            $files,
+        );
+
+        $article->update(['imgs' => [...$article->imgs, ...$urls]]);
     }
 
     /** DELETE /api/{...}/{article} · admin */

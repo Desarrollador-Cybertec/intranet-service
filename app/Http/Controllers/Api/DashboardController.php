@@ -43,6 +43,22 @@ class DashboardController extends Controller
                 'photo' => $u->photo,
             ]);
 
+        $birthdaysThisMonth = $this->activeColaboradores()
+            ->whereNotNull('birthday')
+            ->whereMonth('birthday', $today->month)
+            ->get()
+            ->sortBy(fn (User $u) => $u->birthday->day)
+            ->values()
+            ->map(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'initials' => $u->initials ?: User::initialsFrom($u->name),
+                'color' => $u->color ?: User::colorFrom($u->email),
+                'area' => $u->area,
+                'photo' => $u->photo,
+                'day' => $u->birthday->day,
+            ]);
+
         return response()->json([
             'stats' => [
                 'colaboradores' => $this->activeColaboradores()->count(),
@@ -58,6 +74,7 @@ class DashboardController extends Controller
                 'sumatePeriodoLabel' => $config?->periodo_label,
             ],
             'birthdaysToday' => $birthdaysToday,
+            'birthdaysThisMonth' => $birthdaysThisMonth,
             'banner' => $this->banner(),
             'quickLinks' => ModuleResource::collection(
                 Module::section('inicio')->visible()->ordered()->get()
